@@ -1,0 +1,12 @@
+.env
+__pycache__/
+*.pyc
+~$*
+*.csv
+26.10.23.*
+domexprint.xlsx
+postoffice*.xlsx
+postofficebill*.pdf
+flot_database.db
+*.code-workspace
+templates.code-*

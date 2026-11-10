@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>New Leads Management - 24K Shine FLOT</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- SheetJS Library for reading Excel files -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+</head>
+<body class="bg-gray-100 font-sans">
+    <div class="flex h-screen">
+        <!-- Sidebar -->
+        <div class="w-64 bg-gray-900 text-white flex flex-col">
+            <div class="p-5 text-2xl font-bold tracking-wider text-yellow-400">24K Shine FLOT</div>
+            <nav class="flex-1 px-4 space-y-2 mt-4">
+                <a href="/" class="block py-2.5 px-4 rounded hover:bg-gray-800 transition">Dashboard</a>
+                <a href="/product" class="block py-2.5 px-4 rounded hover:bg-gray-800 transition">Products / Inventory</a>
+                <a href="/customers" class="block py-2.5 px-4 rounded bg-gray-800 text-yellow-400 font-semibold">Customers / Leads</a>
+                <a href="/logout" class="block py-2.5 px-4 rounded text-red-400 hover:bg-gray-800 transition mt-10">Logout</a>
+            </nav>
+        </div>
+
+        <!-- Main Content -->
+        <div class="flex-1 flex flex-col overflow-y-auto">
+            <header class="bg-white shadow p-4 flex justify-between items-center">
+                <h1 class="text-xl font-bold text-gray-800">New Leads Management</h1>
+            </header>
+            
+            <main class="p-6">
+                <!-- 1. Manual Add New Lead Form -->
+                <div class="bg-white p-6 rounded-lg shadow mb-6">
+                    <h2 class="text-lg font-bold mb-4 text-gray-700">Add New Order / Lead Manually</h2>
+                    <form id="manualLeadForm" onsubmit="addManualLead(event)" class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-600 mb-1">Customer Name</label>
+                            <input type="text" id="m_name" required class="w-full border p-2 rounded text-sm">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-600 mb-1">Phone Number</label>
+                            <input type="text" id="m_phone" required class="w-full border p-2 rounded text-sm">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-600 mb-1">Address</label>
+                            <input type="text" id="m_address" required class="w-full border p-2 rounded text-sm">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-600 mb-1">Product / Item</label>
+                            <input type="text" id="m_item" required class="w-full border p-2 rounded text-sm">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-600 mb-1">Quantity</label>
+                            <input type="number" id="m_qty" value="1" min="1" required class="w-full border p-2 rounded text-sm">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-600 mb-1">Price (Rs.)</label>
+                            <input type="number" id="m_price" step="0.01" required class="w-full border p-2 rounded text-sm">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-600 mb-1">Delivery Method</label>
+                            <input type="text" id="m_delivery" value="Standard" class="w-full border p-2 rounded text-sm">
+                        </div>
+                        <div class="flex items-end">
+                            <button type="submit" class="w-full bg-blue-600 text-white font-bold py-2 px-4 rounded hover:bg-blue-700 transition text-sm">Save New Lead</button>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- 2. Upload Excel File Section -->
+                <div class="bg-white p-6 rounded-lg shadow mb-6">
+                    <h2 class="text-lg font-bold mb-4 text-gray-700">Upload Excel File & Save (Duplicate Protected)</h2>
+                    <div class="flex items-center space-x-4">
+                        <input type="file" id="excelFile" accept=".xlsx, .xls" class="border p-2 rounded w-full">
+                        <button onclick="uploadAndSaveExcel()" class="bg-green-600 text-white font-bold px-6 py-2 rounded hover:bg-green-700 transition whitespace-nowrap text-sm">Upload & Save to DB</button>
+                    </div>
+                </div>
+
+                <!-- 3. New Leads Display Table -->
+                <div class="bg-white p-6 rounded-lg shadow">
+                    <h2 class="text-lg font-bold mb-4 text-gray-700">New Leads / Orders List</h2>
+                    <div class="overflow-x-auto">
+                        <table class="w-full border-collapse">
+                            <thead>
+                                <tr class="bg-gray-200 text-left text-sm">
+                                    <th class="p-3">Name</th>
+                                    <th class="p-3">Phone</th>
+                                    <th class="p-3">Address</th>
+                                    <th class="p-3">Item</th>
+                                    <th class="p-3">Qty</th>
+                                    <th class="p-3">Price</th>
+                                    <th class="p-3">Status</th>
+                                    <th class="p-3">Delivery</th>
+                                    <th class="p-3">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="ordersTableBody" class="text-sm">
+                                <!-- Data will load here -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <script>
+        window.onload = function() {
+            loadOrders();
+        };
+
+        function loadOrders() {
+            fetch('/api/get_orders')
+            .then(res => res.json())
+            .then(data => {
+                const tbody = document.getElementById('ordersTableBody');
+                tbody.innerHTML = '';
+                
+                if (data.length === 0) {
+                    tbody.innerHTML = `<tr><td colspan="9" class="text-center p-4 text-gray-500">No orders found.</td></tr>`;
+                    return;
+                }
+
+                data.forEach(order => {
+                    const tr = document.createElement('tr');
+                    tr.className = "border-b hover:bg-gray-50";
+                    tr.innerHTML = `
+                        <td class="p-3">${order.customer_name || ''}</td>
+                        <td class="p-3">${order.phone_number || ''}</td>
+                        <td class="p-3">${order.address || ''}</td>
+                        <td class="p-3">${order.product_name || ''}</td>
+                        <td class="p-3">${order.quantity || 1}</td>
+                        <td class="p-3">Rs. ${order.amount || 0}</td>
+                        <td class="p-3"><span class="bg-yellow-100 text-yellow-800 px-2 py-1 rounded text-xs font-bold">${order.status || 'New Lead'}</span></td>
+                        <td class="p-3">${order.delivery_method || ''}</td>
+                        <td class="p-3">
+                            <button onclick="alert('Edit feature')" class="bg-blue-500 text-white px-2 py-1 rounded text-xs">Edit</button>
+                        </td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+            });
+        }
+
+        function addManualLead(event) {
+            event.preventDefault();
+            const orderData = {
+                name: document.getElementById('m_name').value,
+                phone: document.getElementById('m_phone').value,
+                address: document.getElementById('m_address').value,
+                item: document.getElementById('m_item').value,
+                quantity: parseInt(document.getElementById('m_qty').value),
+                price: parseFloat(document.getElementById('m_price').value),
+                delivery: document.getElementById('m_delivery').value,
+                order_date: new Date().toISOString().split('T')[0]
+            };
+
+            fetch('/api/save_order', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(orderData)
+            })
+            .then(res => res.json())
+            .then(result => {
+                if (result.status === 'success') {
+                    alert("Order added successfully!");
+                    document.getElementById('manualLeadForm').reset();
+                    loadOrders();
+                } else if (result.status === 'duplicate') {
+                    alert("Warning: Order with this phone number already exists!");
+                } else {
+                    alert("Error: " + result.message);
+                }
+            });
+        }
+
+        function uploadAndSaveExcel() {
+            const fileInput = document.getElementById('excelFile');
+            if (fileInput.files.length === 0) {
+                alert("Please select an Excel file first!");
+                return;
+            }
+
+            const file = fileInput.files[0];
+            const reader = new FileReader();
+
+            reader.onload = function(e) {
+                const data = new Uint8Array(e.target.result);
+                const workbook = XLSX.read(data, {type: 'array'});
+                const sheetName = workbook.SheetNames[0];
+                const jsonData = XLSX.utils.sheet_to_json(workbook.Sheets[sheetName]);
+
+                if (jsonData.length === 0) {
+                    alert("Excel file is empty!");
+                    return;
+                }
+
+                let processed = 0;
+                let added = 0;
+                let duplicates = 0;
+
+                jsonData.forEach(row => {
+                    const getVal = (keys) => {
+                        for (let k of keys) {
+                            for (let rKey in row) {
+                                if (rKey.trim().toLowerCase() === k.toLowerCase()) return row[rKey];
+                            }
+                        }
+                        return '';
+                    };
+
+                    const orderData = {
+                        name: getVal(['Name', 'Customer Name', 'Customer', 'customer_name']),
+                        phone: String(getVal(['Phone', 'Phone Number', 'Mobile', 'phone_number']) || ''),
+                        address: getVal(['Address', 'Delivery Address', 'address']),
+                        item: getVal(['Item', 'Product', 'Product Name', 'product_name']),
+                        quantity: parseInt(getVal(['Quantity', 'Qty', 'quantity']) || 1),
+                        price: parseFloat(getVal(['Price', 'Amount', 'Total', 'amount']) || 0),
+                        delivery: getVal(['Delivery', 'Delivery Method', 'delivery_method']) || 'Standard',
+                        order_date: new Date().toISOString().split('T')[0]
+                    };
+
+                    fetch('/api/save_order', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(orderData)
+                    })
+                    .then(res => res.json())
+                    .then(res => {
+                        processed++;
+                        if (res.status === 'success') added++;
+                        if (res.status === 'duplicate') duplicates++;
+
+                        if (processed === jsonData.length) {
+                            alert(`Excel Upload Complete!\n- Added New Leads: ${added}\n- Duplicates Skipped: ${duplicates}`);
+                            loadOrders();
+                        }
+                    });
+                });
+            };
+            reader.readAsArrayBuffer(file);
+        }
+    </script>
+</body>
+</html>

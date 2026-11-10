@@ -1,0 +1,1874 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>24K Shine - FLOT Business Management System</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+</head>
+<body class="bg-gray-50 font-sans antialiased">
+
+    <div class="flex h-screen overflow-hidden">
+
+        <!-- Sidebar Navigation -->
+        <aside class="w-64 bg-slate-900 text-white flex flex-col shadow-xl border-r border-slate-800">
+            <div class="flex items-center gap-3 px-6 py-5 border-b border-slate-800 bg-slate-950">
+                <div class="w-11 h-11 bg-amber-500/20 text-amber-400 rounded-xl flex items-center justify-center font-bold border border-amber-500/30">24K</div>
+                <div>
+                    <h1 class="text-base font-bold tracking-wider text-amber-400">24K SHINE</h1>
+                    <p class="text-[10px] text-gray-400 tracking-widest uppercase">FLOT System</p>
+                </div>
+            </div>
+
+            <nav class="flex-1 overflow-y-auto py-4 px-3 space-y-2 text-sm">
+                <button type="button" onclick="switchTab('home')" id="btn-home" class="nav-btn w-full flex items-center gap-3.5 px-4 py-3 rounded-xl font-medium transition bg-amber-500 text-slate-950 shadow-md">
+                    <i class="fa-solid fa-house w-5 text-center"></i> Home Page
+                </button>
+                <button type="button" onclick="switchTab('orders')" id="btn-orders" class="nav-btn w-full flex items-center gap-3.5 px-4 py-3 rounded-xl font-medium transition text-gray-300 hover:bg-slate-800 hover:text-white">
+                    <i class="fa-solid fa-list-check w-5 text-center text-amber-400"></i> Orders / Leads
+                </button>
+                <button type="button" onclick="switchTab('items')" id="btn-items" class="nav-btn w-full flex items-center gap-3.5 px-4 py-3 rounded-xl font-medium transition text-gray-300 hover:bg-slate-800 hover:text-white">
+                    <i class="fa-solid fa-boxes-stacked w-5 text-center text-amber-400"></i> Items & Availability
+                </button>
+                <button type="button" onclick="switchTab('track')" id="btn-track" class="nav-btn w-full flex items-center gap-3.5 px-4 py-3 rounded-xl font-medium transition text-gray-300 hover:bg-slate-800 hover:text-white">
+                    <i class="fa-solid fa-truck-fast w-5 text-center text-amber-400"></i> Track Orders
+                </button>
+                <button type="button" onclick="switchTab('budget')" id="btn-budget" class="nav-btn w-full flex items-center gap-3.5 px-4 py-3 rounded-xl font-medium transition text-gray-300 hover:bg-slate-800 hover:text-white">
+                    <i class="fa-solid fa-wallet w-5 text-center text-amber-400"></i> Budget
+                </button>
+                <button type="button" onclick="switchTab('notifications')" id="btn-notifications" class="nav-btn w-full flex items-center gap-3.5 px-4 py-3 rounded-xl font-medium transition text-gray-300 hover:bg-slate-800 hover:text-white">
+                    <i class="fa-solid fa-bell w-5 text-center text-amber-400"></i> Notifications
+                    <span id="notifBadge" class="hidden ml-auto bg-red-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full">0</span>
+                </button>
+            </nav>
+
+            <div class="p-4 border-t border-slate-800">
+                <a href="/logout" class="w-full flex items-center justify-center gap-2 bg-slate-800 hover:bg-red-600/20 hover:text-red-400 text-gray-300 py-2.5 rounded-xl text-sm font-medium transition">
+                    <i class="fa-solid fa-right-from-bracket"></i> Logout
+                </a>
+            </div>
+        </aside>
+
+        <!-- Main Content Area -->
+        <main class="flex-1 flex flex-col overflow-hidden bg-gray-50">
+
+            <header class="h-16 bg-white border-b border-gray-200 flex items-center justify-between px-8 shadow-sm">
+                <div class="flex items-center gap-4">
+                    <span class="text-2xl font-extrabold tracking-widest text-slate-900">F _ L _ O _ T</span>
+                </div>
+                <div class="flex items-center gap-6">
+                    <span class="text-sm font-semibold text-gray-600 bg-amber-50 px-4 py-1.5 rounded-lg border border-amber-200">
+                        <i class="fa-regular fa-calendar-days text-amber-600 mr-2"></i> Date: <span id="currentDate">2026</span>
+                    </span>
+                    <span class="text-sm font-medium text-gray-600 bg-gray-100 px-3 py-1.5 rounded-full border border-gray-200">
+                        <i class="fa-solid fa-user-shield text-amber-600 mr-1.5"></i> Admin
+                    </span>
+                </div>
+            </header>
+
+            <div class="flex-1 overflow-y-auto p-8">
+
+                <!-- TAB: HOME PAGE -->
+                <div id="tab-home" class="space-y-6 max-w-5xl mx-auto">
+                    <div class="bg-gradient-to-r from-slate-900 via-slate-900 to-slate-800 rounded-3xl p-8 text-white shadow-xl border border-amber-500/30 space-y-6">
+                        <div class="flex flex-col md:flex-row items-center justify-between gap-6">
+                            <div>
+                                <div class="flex items-center gap-3">
+                                    <h2 class="text-4xl font-extrabold tracking-wider text-amber-400">24K SHINE</h2>
+                                    <span class="bg-amber-500/20 text-amber-300 text-xs px-3.5 py-1 rounded-full font-bold border border-amber-500/30">Wholesale & Retail</span>
+                                </div>
+                                <p class="text-xs text-gray-300 tracking-widest uppercase mt-1">FLOT E-Commerce Fashion & Jewelry Brand</p>
+                                <p class="text-base text-amber-200 font-semibold italic mt-3">"Jewelry is not an accessory, it's the signature of your unique style."</p>
+                            </div>
+                            <div class="flex items-center gap-3">
+                                <a href="https://facebook.com" target="_blank" class="w-12 h-12 bg-blue-600 hover:bg-blue-700 text-white rounded-2xl flex items-center justify-center text-xl transition shadow-lg" title="Facebook">
+                                    <i class="fa-brands fa-facebook-f"></i>
+                                </a>
+                                <a href="https://instagram.com" target="_blank" class="w-12 h-12 bg-pink-600 hover:bg-pink-700 text-white rounded-2xl flex items-center justify-center text-xl transition shadow-lg" title="Instagram">
+                                    <i class="fa-brands fa-instagram"></i>
+                                </a>
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 pt-6 border-t border-slate-700 text-xs">
+                            <div class="flex items-center gap-3 bg-slate-800/90 p-4 rounded-2xl border border-slate-700 shadow-sm">
+                                <div class="w-10 h-10 bg-amber-500/20 text-amber-400 rounded-xl flex items-center justify-center text-base"><i class="fa-solid fa-phone"></i></div>
+                                <div>
+                                    <p class="text-gray-400 text-[10px] uppercase">Contact Number</p>
+                                    <p class="font-bold text-white text-sm">+94 72 488 7776</p>
+                                </div>
+                            </div>
+                            <div class="flex items-center gap-3 bg-slate-800/90 p-4 rounded-2xl border border-slate-700 shadow-sm">
+                                <div class="w-10 h-10 bg-emerald-500/20 text-emerald-400 rounded-xl flex items-center justify-center text-base"><i class="fa-brands fa-whatsapp"></i></div>
+                                <div>
+                                    <p class="text-gray-400 text-[10px] uppercase">WhatsApp Number</p>
+                                    <p class="font-bold text-white text-sm">+94 72 488 7776</p>
+                                </div>
+                            </div>
+                            <div class="flex items-center gap-3 bg-slate-800/90 p-4 rounded-2xl border border-slate-700 shadow-sm">
+                                <div class="w-10 h-10 bg-blue-500/20 text-blue-400 rounded-xl flex items-center justify-center text-base"><i class="fa-brands fa-facebook-f"></i></div>
+                                <div>
+                                    <p class="text-gray-400 text-[10px] uppercase">Facebook & Instagram</p>
+                                    <p class="font-bold text-white text-sm">24k shine</p>
+                                </div>
+                            </div>
+                            <div class="flex items-center gap-3 bg-slate-800/90 p-4 rounded-2xl border border-slate-700 shadow-sm">
+                                <div class="w-10 h-10 bg-rose-500/20 text-rose-400 rounded-xl flex items-center justify-center text-base"><i class="fa-solid fa-location-dot"></i></div>
+                                <div>
+                                    <p class="text-gray-400 text-[10px] uppercase">Address</p>
+                                    <p class="font-bold text-white text-xs truncate">FLOT, Mangalagama, Molagoda, Kegalle</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- TAB: ORDERS / LEADS -->
+                <div id="tab-orders" class="hidden space-y-6">
+                    <div class="flex justify-between items-center mb-4">
+                        <h2 class="text-2xl font-bold text-slate-800">Orders & Call Center Management</h2>
+                        <button type="button" onclick="openOrderModal()" class="bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold px-4 py-2.5 rounded-xl transition text-sm flex items-center gap-2 shadow-sm">
+                            <i class="fa-solid fa-circle-plus text-base"></i> Add New Order
+                        </button>
+                    </div>
+
+                    <!-- Excel Upload Section -->
+                    <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-200 mb-6">
+                        <h3 class="text-lg font-bold mb-3 text-slate-800">Upload Orders Excel File (Duplicate Protected)</h3>
+                        <div class="flex flex-col md:flex-row items-center gap-4">
+                            <label class="w-full border-2 border-dashed border-gray-300 hover:border-emerald-500 rounded-xl p-4 flex items-center justify-center gap-3 cursor-pointer bg-gray-50 hover:bg-emerald-50/50 transition">
+                                <i class="fa-solid fa-file-excel text-emerald-600 text-xl"></i>
+                                <span id="fileNameDisplay" class="text-sm font-medium text-gray-600">Choose Excel File (.xlsx, .xls)</span>
+                                <input type="file" id="excelOrderFile" accept=".xlsx, .xls" class="hidden" onchange="updateFileName(this)">
+                            </label>
+                            <button type="button" id="uploadBtn" onclick="uploadAndSaveExcelOrders()" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-6 py-3 rounded-xl transition text-sm whitespace-nowrap shadow-sm">
+                                <i class="fa-solid fa-upload mr-1.5"></i> Upload & Save to DB
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Status Filter Tabs -->
+                    <div class="flex flex-wrap gap-2 mb-4">
+                        <button onclick="filterOrders('ALL', this)" class="filter-btn px-4 py-2 rounded-xl text-xs font-bold bg-slate-900 text-white transition shadow-sm">All Leads</button>
+                        <button onclick="filterOrders('Confirmed', this)" class="filter-btn px-4 py-2 rounded-xl text-xs font-bold bg-white text-slate-700 border hover:bg-gray-100 transition shadow-sm">Completed Orders (Confirmed)</button>
+                        <button onclick="filterOrders('Pending', this)" class="filter-btn px-4 py-2 rounded-xl text-xs font-bold bg-white text-slate-700 border hover:bg-gray-100 transition shadow-sm">Pending Confirmation (Callback / No Answer)</button>
+                        <button onclick="filterOrders('Cancelled', this)" class="filter-btn px-4 py-2 rounded-xl text-xs font-bold bg-white text-slate-700 border hover:bg-gray-100 transition shadow-sm">Cancelled Leads</button>
+                        <button onclick="filterOrders('Postponed', this)" class="filter-btn px-4 py-2 rounded-xl text-xs font-bold bg-white text-slate-700 border hover:bg-gray-100 transition shadow-sm">Postponed Orders</button>
+                    </div>
+
+                    <!-- Search -->
+                    <div class="mb-4">
+                        <input type="text" id="orderSearch" oninput="renderOrdersTable()" placeholder="Search by name, phone, item..." class="w-full md:w-96 border border-gray-300 p-2.5 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-amber-500">
+                    </div>
+
+                    <!-- Orders Table -->
+                    <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-200">
+                        <h3 id="tableTitle" class="text-lg font-bold mb-4 text-slate-800">All Leads List</h3>
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left border-collapse text-sm">
+                                <thead>
+                                    <tr class="bg-slate-100 border-b text-xs font-bold text-slate-700 uppercase">
+                                        <th class="p-3">Customer Name</th>
+                                        <th class="p-3">Phone</th>
+                                        <th class="p-3">Address</th>
+                                        <th class="p-3">Item Code</th>
+                                        <th class="p-3">Item Name</th>
+                                        <th class="p-3">Qty</th>
+                                        <th class="p-3">Price</th>
+                                        <th class="p-3">Delivery</th>
+                                        <th class="p-3">Call Status (Update)</th>
+                                        <th class="p-3"></th>
+                                    </tr>
+                                </thead>
+                                <tbody id="ordersTableBody" class="divide-y text-slate-700">
+                                    <tr><td colspan="10" class="p-4 text-center text-gray-400">Loading orders...</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- TAB: ITEMS & AVAILABILITY -->
+                <div id="tab-items" class="hidden space-y-6">
+                    <div class="flex items-center justify-between mb-4">
+                        <div>
+                            <h2 class="text-2xl font-bold text-slate-800">Items & Availability (Excel Connected)</h2>
+                            <p class="text-sm text-gray-500">Stock updates save directly to items.xlsx</p>
+                        </div>
+                        <button type="button" onclick="addNewItem()" class="bg-amber-500 hover:bg-amber-600 text-slate-950 font-semibold px-4 py-2 rounded-xl transition text-sm shadow-sm">
+                            <i class="fa-solid fa-plus mr-1"></i> Add New Item
+                        </button>
+                    </div>
+
+                    <div class="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-x-auto">
+                        <table class="w-full text-left border-collapse text-sm">
+                            <thead>
+                                <tr class="bg-slate-100 border-b border-gray-200 text-xs font-bold text-slate-700 uppercase tracking-wider">
+                                    <th class="p-3">Item Code</th>
+                                    <th class="p-3">Item Name</th>
+                                    <th class="p-3">Category</th>
+                                    <th class="p-3">Remaining Stock</th>
+                                    <th class="p-3">Min Stock Alert</th>
+                                    <th class="p-3 text-center">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="inventoryTableBody" class="divide-y divide-gray-200 text-slate-700"></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- TAB: TRACK ORDERS -->
+                <div id="tab-track" class="hidden space-y-6">
+                    <h2 class="text-2xl font-bold text-slate-800">Track Orders Management</h2>
+                </div>
+
+                <!-- TAB: NOTIFICATIONS -->
+                <div id="tab-notifications" class="hidden space-y-6">
+                    <div class="flex items-center justify-between">
+                        <h2 class="text-2xl font-bold text-slate-800">Notifications</h2>
+                        <button type="button" onclick="loadNotifications()" class="bg-white border border-gray-300 hover:bg-gray-100 text-slate-700 font-semibold px-4 py-2 rounded-xl text-sm transition">
+                            <i class="fa-solid fa-rotate mr-1"></i> Refresh
+                        </button>
+                    </div>
+                    <div id="notificationList" class="space-y-6"></div>
+                </div>
+
+                <!-- TAB: BUDGET -->
+                <div id="tab-budget" class="hidden space-y-6">
+                    <h2 class="text-2xl font-bold text-slate-800">Budget Management</h2>
+
+                    <div class="flex flex-wrap gap-2">
+                        <button type="button" data-pane="daily" onclick="budSwitch('daily', this)" class="bud-tab px-4 py-2 rounded-xl text-xs font-bold bg-slate-900 text-white border transition shadow-sm">Daily Profit (Parcels)</button>
+                        <button type="button" data-pane="month" onclick="budSwitch('month', this)" class="bud-tab px-4 py-2 rounded-xl text-xs font-bold bg-white text-slate-700 border transition shadow-sm">Monthly Summary</button>
+                        <button type="button" data-pane="ads" onclick="budSwitch('ads', this)" class="bud-tab px-4 py-2 rounded-xl text-xs font-bold bg-white text-slate-700 border transition shadow-sm">Daily Ad Cost</button>
+                        <button type="button" data-pane="expenses" onclick="budSwitch('expenses', this)" class="bud-tab px-4 py-2 rounded-xl text-xs font-bold bg-white text-slate-700 border transition shadow-sm">Monthly Expenses &amp; Savings</button>
+                        <button type="button" data-pane="settings" onclick="budSwitch('settings', this)" class="bud-tab px-4 py-2 rounded-xl text-xs font-bold bg-white text-slate-700 border transition shadow-sm">Cost Settings</button>
+                    </div>
+
+                    <!-- DAILY PROFIT -->
+                    <div id="bud-pane-daily" class="space-y-6">
+                        <div class="flex flex-wrap items-end gap-4">
+                            <div>
+                                <label class="block text-xs font-semibold text-gray-600 mb-1">Date</label>
+                                <input type="date" id="bud_day" onchange="loadBudgetDay()" class="border border-gray-300 p-2.5 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-amber-500">
+                            </div>
+                            <button type="button" onclick="downloadDayExcel()" class="bg-white border border-gray-300 hover:bg-gray-100 text-slate-700 font-semibold px-4 py-2.5 rounded-xl text-sm transition"><i class="fa-solid fa-download mr-1"></i> Download Excel</button>
+                            <p class="text-xs text-gray-500 max-w-2xl">Parcels = Confirmed orders of this date. Item cost, packing cost and delivery cost come from Cost Settings (by item code and delivery method). The day's ad cost is divided equally between the parcels. Change any cost of a parcel (or add an Extra Cost) and press Save. Changed costs are highlighted.</p>
+                        </div>
+
+                        <div id="budDayCards" class="grid grid-cols-2 md:grid-cols-4 gap-4"></div>
+
+                        <div class="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-x-auto">
+                            <table class="w-full text-left border-collapse text-sm">
+                                <thead>
+                                    <tr class="bg-slate-100 border-b text-xs font-bold text-slate-700 uppercase">
+                                        <th class="p-3">Item Code</th>
+                                        <th class="p-3">Name</th>
+                                        <th class="p-3">Category</th>
+                                        <th class="p-3">Quantity</th>
+                                        <th class="p-3">Selling Price</th>
+                                        <th class="p-3">Item Cost</th>
+                                        <th class="p-3">Packing Cost</th>
+                                        <th class="p-3">Delivery Cost</th>
+                                        <th class="p-3">Ad Cost</th>
+                                        <th class="p-3">Extra Cost</th>
+                                        <th class="p-3">Full Cost</th>
+                                        <th class="p-3">Profit</th>
+                                        <th class="p-3"></th>
+                                    </tr>
+                                </thead>
+                                <tbody id="budParcelBody" class="divide-y text-slate-700"></tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- MONTHLY SUMMARY -->
+                    <div id="bud-pane-month" class="hidden space-y-6">
+                        <div class="flex flex-wrap items-end gap-4">
+                            <div>
+                                <label class="block text-xs font-semibold text-gray-600 mb-1">Month</label>
+                                <input type="month" id="bud_month" onchange="loadBudgetMonth()" class="border border-gray-300 p-2.5 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-amber-500">
+                            </div>
+                            <p class="text-xs text-gray-500 max-w-2xl">Only days with parcels or ad cost are listed. Click a date to open that day. Final Profit uses the full monthly expenses and savings.</p>
+                        </div>
+
+                        <div id="budMonthCards" class="grid grid-cols-2 md:grid-cols-4 gap-4"></div>
+
+                        <div class="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-x-auto">
+                            <table class="w-full text-left border-collapse text-sm">
+                                <thead>
+                                    <tr class="bg-slate-100 border-b text-xs font-bold text-slate-700 uppercase">
+                                        <th class="p-3">Date</th>
+                                        <th class="p-3">Parcels</th>
+                                        <th class="p-3">Sales</th>
+                                        <th class="p-3">Parcel Costs</th>
+                                        <th class="p-3">Ad Cost</th>
+                                        <th class="p-3">Gross Profit</th>
+                                        <th class="p-3">Monthly Cost Share</th>
+                                        <th class="p-3">Net Profit</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="budMonthBody" class="divide-y text-slate-700"></tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- DAILY AD COST -->
+                    <div id="bud-pane-ads" class="hidden space-y-6">
+                        <form onsubmit="saveAdCost(event)" class="bg-white p-6 rounded-2xl shadow-sm border border-gray-200 grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
+                            <div>
+                                <label class="block text-xs font-semibold text-gray-600 mb-1">Date</label>
+                                <input type="date" id="ad_date" required class="w-full border border-gray-300 p-2.5 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-amber-500">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold text-gray-600 mb-1">Total Ad Cost of the Day (Rs.)</label>
+                                <input type="number" id="ad_amount" step="0.01" min="0" required class="w-full border border-gray-300 p-2.5 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-amber-500">
+                            </div>
+                            <div>
+                                <button type="submit" class="w-full bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold py-2.5 px-4 rounded-xl transition text-sm shadow-sm">Save Ad Cost</button>
+                            </div>
+                            <p class="text-xs text-gray-500">Saving the same date again updates the amount.</p>
+                        </form>
+
+                        <div class="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-x-auto">
+                            <table class="w-full text-left border-collapse text-sm">
+                                <thead>
+                                    <tr class="bg-slate-100 border-b text-xs font-bold text-slate-700 uppercase">
+                                        <th class="p-3">Date</th>
+                                        <th class="p-3">Ad Cost</th>
+                                        <th class="p-3"></th>
+                                    </tr>
+                                </thead>
+                                <tbody id="adCostBody" class="divide-y text-slate-700"></tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- MONTHLY EXPENSES -->
+                    <div id="bud-pane-expenses" class="hidden space-y-6">
+                        <div id="budExpenseCards" class="grid grid-cols-1 md:grid-cols-3 gap-4"></div>
+
+                        <form onsubmit="addMonthlyExpense(event)" class="bg-white p-6 rounded-2xl shadow-sm border border-gray-200 grid grid-cols-1 md:grid-cols-5 gap-4 items-end">
+                            <div>
+                                <label class="block text-xs font-semibold text-gray-600 mb-1">Name</label>
+                                <input type="text" id="ex_name" required maxlength="100" placeholder="e.g. Rental fee" class="w-full border border-gray-300 p-2.5 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-amber-500">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold text-gray-600 mb-1">Type</label>
+                                <select id="ex_category" class="w-full border border-gray-300 p-2.5 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-amber-500">
+                                    <option value="Expense">Expense</option>
+                                    <option value="Savings">Savings</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold text-gray-600 mb-1">Amount per Month (Rs.)</label>
+                                <input type="number" id="ex_amount" step="0.01" min="0.01" required class="w-full border border-gray-300 p-2.5 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-amber-500">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold text-gray-600 mb-1">Starts From</label>
+                                <input type="month" id="ex_start" class="w-full border border-gray-300 p-2.5 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-amber-500">
+                            </div>
+                            <div>
+                                <button type="submit" class="w-full bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold py-2.5 px-4 rounded-xl transition text-sm shadow-sm">Add</button>
+                            </div>
+                        </form>
+
+                        <div class="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-x-auto">
+                            <table class="w-full text-left border-collapse text-sm">
+                                <thead>
+                                    <tr class="bg-slate-100 border-b text-xs font-bold text-slate-700 uppercase">
+                                        <th class="p-3">Name</th>
+                                        <th class="p-3">Type</th>
+                                        <th class="p-3">Amount / Month</th>
+                                        <th class="p-3">Starts From</th>
+                                        <th class="p-3"></th>
+                                    </tr>
+                                </thead>
+                                <tbody id="expenseBody" class="divide-y text-slate-700"></tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- COST SETTINGS -->
+                    <div id="bud-pane-settings" class="hidden space-y-6">
+                        <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-200 space-y-4">
+                            <h3 class="text-lg font-bold text-slate-800">Default Costs</h3>
+                            <p class="text-xs text-gray-500">Used when an item has no packing cost, or a delivery method has no cost.</p>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 max-w-xl">
+                                <div>
+                                    <label class="block text-xs font-semibold text-gray-600 mb-1">Default Packing Cost (per parcel)</label>
+                                    <input type="number" id="set_packing" step="0.01" min="0" value="0" class="w-full border border-gray-300 p-2.5 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-amber-500">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-semibold text-gray-600 mb-1">Default Delivery Cost (per parcel)</label>
+                                    <input type="number" id="set_delivery" step="0.01" min="0" value="0" class="w-full border border-gray-300 p-2.5 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-amber-500">
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-200 space-y-4">
+                            <h3 class="text-lg font-bold text-slate-800">Delivery Cost by Method</h3>
+                            <p class="text-xs text-gray-500">Courier parcels (Express / Domex) and Post Office parcels (SpeedPost) can have different delivery costs. Leave a cost blank to use the default. The method name must match the Delivery value of the orders.</p>
+                            <div class="overflow-x-auto">
+                                <table class="w-full text-left border-collapse text-sm max-w-xl">
+                                    <thead>
+                                        <tr class="bg-slate-100 border-b text-xs font-bold text-slate-700 uppercase">
+                                            <th class="p-3">Delivery Method</th>
+                                            <th class="p-3">Cost per Parcel (Rs.)</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="deliveryCostBody" class="divide-y text-slate-700"></tbody>
+                                </table>
+                            </div>
+                            <div class="flex gap-2 max-w-xl">
+                                <input type="text" id="set_new_method" maxlength="50" placeholder="New delivery method name" class="flex-1 border border-gray-300 p-2.5 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-amber-500">
+                                <button type="button" onclick="addDeliveryMethod()" class="bg-slate-900 hover:bg-slate-700 text-white font-bold px-4 py-2.5 rounded-xl text-sm transition">Add Method</button>
+                            </div>
+                        </div>
+
+                        <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-200 space-y-4">
+                            <h3 class="text-lg font-bold text-slate-800">Item Costs (by Item Code)</h3>
+                            <p class="text-xs text-gray-500">Costs are kept in itemcost.xlsx (project folder). Each Code can have a row per Quantity (1, 2, ...) with the full cost for that quantity. If a quantity has no row, the Quantity 1 cost x quantity is used. Packing Cost blank = default. Edit here and Save, or upload an Excel with the columns: Code, Name, Category, Quantity, Item cost, Packing cost.</p>
+                            <div class="flex flex-wrap items-center gap-3">
+                                <button type="button" onclick="downloadItemCostTemplate()" class="bg-white border border-gray-300 hover:bg-gray-100 text-slate-700 font-semibold px-4 py-2 rounded-xl text-sm transition">
+                                    <i class="fa-solid fa-download mr-1"></i> Download Excel
+                                </button>
+                                <label class="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold px-4 py-2 rounded-xl text-sm transition cursor-pointer">
+                                    <i class="fa-solid fa-file-excel mr-1"></i> Upload Excel
+                                    <input type="file" accept=".xlsx, .xls" class="hidden" onchange="importItemCostsFromExcel(this)">
+                                </label>
+                            </div>
+                            <div class="overflow-x-auto">
+                                <table class="w-full text-left border-collapse text-sm">
+                                    <thead>
+                                        <tr class="bg-slate-100 border-b text-xs font-bold text-slate-700 uppercase">
+                                            <th class="p-3">Item Code</th>
+                                            <th class="p-3">Name</th>
+                                            <th class="p-3">Category</th>
+                                            <th class="p-3">Quantity</th>
+                                            <th class="p-3">Item Cost</th>
+                                            <th class="p-3">Packing Cost</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="itemCostBody" class="divide-y text-slate-700"></tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <button type="button" onclick="saveBudgetSettings()" class="bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold px-8 py-3 rounded-xl transition text-sm shadow-sm">Save Settings</button>
+                    </div>
+                </div>
+
+            </div>
+        </main>
+    </div>
+
+    <!-- MODAL: POSTPONE ORDER -->
+    <div id="postponeModal" class="hidden fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-3xl shadow-2xl max-w-sm w-full p-6 space-y-5 border border-gray-100">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 bg-amber-500/10 text-amber-600 rounded-xl flex items-center justify-center font-bold">
+                    <i class="fa-solid fa-clock-rotate-left"></i>
+                </div>
+                <h3 class="text-xl font-bold text-slate-800">Postpone Order</h3>
+            </div>
+            <p class="text-sm text-gray-500">Customer asked to order later. Select the date to follow up. You will get a notification 3 days before this date.</p>
+            <div>
+                <label class="block text-xs font-semibold text-gray-600 mb-1">Postpone Until</label>
+                <input type="date" id="postponeDate" class="w-full border border-gray-300 p-2.5 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-amber-500">
+            </div>
+            <div class="flex justify-end gap-3 pt-2 border-t">
+                <button type="button" onclick="closePostponeModal()" class="px-5 py-2.5 rounded-xl border border-gray-300 text-gray-700 font-semibold text-sm hover:bg-gray-100 transition">Cancel</button>
+                <button type="button" onclick="confirmPostpone()" class="bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold px-6 py-2.5 rounded-xl transition text-sm shadow-sm">Save</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL: ADD NEW ORDER -->
+    <div id="orderModal" class="hidden fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-3xl shadow-2xl max-w-3xl w-full p-6 space-y-6 border border-gray-100 max-h-[92vh] overflow-y-auto">
+            <div class="flex justify-between items-center border-b pb-4">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 bg-amber-500/10 text-amber-600 rounded-xl flex items-center justify-center font-bold">
+                        <i class="fa-solid fa-cart-plus"></i>
+                    </div>
+                    <h3 id="orderModalTitle" class="text-xl font-bold text-slate-800">Add New Order / Lead</h3>
+                </div>
+                <button type="button" onclick="closeOrderModal()" class="text-gray-400 hover:text-gray-600 text-xl font-bold p-2">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+
+            <form id="orderForm" onsubmit="saveManualOrder(event)" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-xs font-semibold text-gray-600 mb-1">Customer Name</label>
+                    <input type="text" id="ord_name" required class="w-full border border-gray-300 p-2.5 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-amber-500">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-gray-600 mb-1">Phone Number</label>
+                    <input type="text" id="ord_phone" required class="w-full border border-gray-300 p-2.5 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-amber-500">
+                </div>
+                <div class="md:col-span-2">
+                    <label class="block text-xs font-semibold text-gray-600 mb-1">Address</label>
+                    <input type="text" id="ord_address" class="w-full border border-gray-300 p-2.5 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-amber-500">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-gray-600 mb-1">Delivery Method</label>
+                    <select id="ord_delivery" class="w-full border border-gray-300 p-2.5 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-amber-500">
+                        <option value="Post Office">Post Office</option>
+                        <option value="Speed Post">Speed Post</option>
+                        <option value="Courier">Courier</option>
+                    </select>
+                </div>
+                <div class="md:col-span-2 space-y-2">
+                    <div class="flex items-center justify-between">
+                        <label class="block text-xs font-semibold text-gray-600">Items (code, quantity and price can be changed)</label>
+                        <button type="button" onclick="addOrderLine()" class="text-xs font-bold text-amber-700 hover:text-amber-800"><i class="fa-solid fa-plus mr-1"></i>Add Item</button>
+                    </div>
+                    <div class="grid grid-cols-12 gap-2 text-[11px] font-bold text-gray-500 uppercase px-1">
+                        <div class="col-span-3">Item Code</div><div class="col-span-4">Item Name</div><div class="col-span-1">Qty</div><div class="col-span-3">Price (Rs.)</div><div class="col-span-1"></div>
+                    </div>
+                    <div id="orderLines" class="space-y-2"></div>
+                    <datalist id="itemCodeList"></datalist>
+                    <div class="flex justify-end items-center gap-3 pt-2 border-t">
+                        <span class="text-sm font-semibold text-gray-600">Total</span>
+                        <span id="orderTotal" class="text-lg font-bold text-slate-900">Rs. 0.00</span>
+                    </div>
+                </div>
+                <div class="md:col-span-2 flex justify-end gap-3 pt-4 border-t">
+                    <button type="button" onclick="closeOrderModal()" class="px-5 py-2.5 rounded-xl border border-gray-300 text-gray-700 font-semibold text-sm hover:bg-gray-100 transition">Cancel</button>
+                    <button type="submit" class="bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold px-6 py-2.5 rounded-xl transition text-sm shadow-sm">Save Order</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        let allOrdersData = [];
+        let currentFilter = 'ALL';
+
+        const dateEl = document.getElementById('currentDate');
+        if (dateEl) dateEl.innerText = new Date().toLocaleDateString();
+
+        // HTML escape (XSS protection)
+        function esc(v) {
+            return String(v === null || v === undefined ? '' : v).replace(/[&<>"']/g, c => ({
+                '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+            }[c]));
+        }
+
+        // Session expire unoth login ekata yawanna
+        function handleAuth(res) {
+            if (res.status === 401) {
+                window.location.href = '/login';
+                throw new Error('Not logged in');
+            }
+            return res.json();
+        }
+
+        function switchTab(tabName) {
+            ['home', 'orders', 'items', 'track', 'budget', 'notifications'].forEach(t => {
+                const el = document.getElementById('tab-' + t);
+                if (el) el.classList.add('hidden');
+            });
+
+            const target = document.getElementById('tab-' + tabName);
+            if (target) target.classList.remove('hidden');
+
+            document.querySelectorAll('.nav-btn').forEach(btn => {
+                btn.classList.remove('bg-amber-500', 'text-slate-950', 'shadow-md');
+                btn.classList.add('text-gray-300', 'hover:bg-slate-800', 'hover:text-white');
+            });
+
+            const activeBtn = document.getElementById('btn-' + tabName);
+            if (activeBtn) {
+                activeBtn.classList.remove('text-gray-300', 'hover:bg-slate-800', 'hover:text-white');
+                activeBtn.classList.add('bg-amber-500', 'text-slate-950', 'shadow-md');
+            }
+
+            if (tabName === 'items') {
+                loadInventoryFromExcel();
+            } else if (tabName === 'notifications') {
+                loadNotifications();
+            } else if (tabName === 'budget') {
+                loadBudget();
+            } else if (tabName === 'orders') {
+                loadOrdersFromDB();
+            }
+        }
+
+        let itemCatalog = [];
+        let editingOrderId = null;
+
+        function loadItemCatalog() {
+            return fetch('/api/item_catalog')
+            .then(handleAuth)
+            .then(data => {
+                itemCatalog = Array.isArray(data) ? data : [];
+                const seen = new Set();
+                const list = document.getElementById('itemCodeList');
+                if (list) {
+                    list.innerHTML = itemCatalog.filter(c => {
+                        const k = c.code.toLowerCase();
+                        if (seen.has(k)) return false;
+                        seen.add(k);
+                        return true;
+                    }).map(c => `<option value="${esc(c.code)}">${esc(c.name)}</option>`).join('');
+                }
+            })
+            .catch(() => { itemCatalog = []; });
+        }
+
+        // code + quantity walata name saha price (exact quantity row nathnam quantity 1 price x qty)
+        function catalogLookup(code, qty) {
+            const c = String(code || '').trim().toLowerCase();
+            if (!c) return null;
+            const rows = itemCatalog.filter(x => x.code.toLowerCase() === c);
+            if (!rows.length) return null;
+            const exact = rows.find(x => Number(x.qty) === Number(qty));
+            if (exact) return { code: exact.code, name: exact.name, price: Number(exact.price) || 0 };
+            const base = rows.find(x => Number(x.qty) === 1) || rows[0];
+            return { code: base.code, name: base.name, price: (Number(base.price) || 0) * Number(qty) };
+        }
+
+        function addOrderLine(line) {
+            const l = line || { code: '', name: '', qty: 1, price: '' };
+            const row = document.createElement('div');
+            row.className = 'grid grid-cols-12 gap-2 items-center order-line';
+            row.dataset.manual = line && line.price !== '' && line.price !== undefined ? '1' : '0';
+            const cls = 'w-full border border-gray-300 p-2 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-amber-500';
+            row.innerHTML = `
+                <input type="text" list="itemCodeList" value="${esc(l.code)}" placeholder="BL002" oninput="onLineChange(this, 'code')" class="col-span-3 ${cls} ol-code">
+                <input type="text" value="${esc(l.name)}" placeholder="Item name" class="col-span-4 ${cls} ol-name">
+                <input type="number" min="1" value="${Number(l.qty) || 1}" oninput="onLineChange(this, 'qty')" class="col-span-1 ${cls} ol-qty">
+                <input type="number" min="0" step="0.01" value="${l.price === '' || l.price === undefined ? '' : Number(l.price)}" oninput="onLineChange(this, 'price')" class="col-span-3 ${cls} ol-price">
+                <button type="button" onclick="removeOrderLine(this)" class="col-span-1 text-red-500 hover:text-red-700 text-lg"><i class="fa-solid fa-trash"></i></button>
+            `;
+            document.getElementById('orderLines').appendChild(row);
+            recalcOrderTotal();
+        }
+
+        function removeOrderLine(btn) {
+            const box = document.getElementById('orderLines');
+            btn.closest('.order-line').remove();
+            if (!box.children.length) addOrderLine();
+            recalcOrderTotal();
+        }
+
+        function onLineChange(input, source) {
+            const row = input.closest('.order-line');
+            if (source === 'price') {
+                row.dataset.manual = '1';
+            } else {
+                if (source === 'code') row.dataset.manual = '0';
+                const qty = parseInt(row.querySelector('.ol-qty').value, 10) || 1;
+                const found = catalogLookup(row.querySelector('.ol-code').value, qty);
+                if (found) {
+                    if (source === 'code') row.querySelector('.ol-name').value = found.name;
+                    if (row.dataset.manual !== '1') row.querySelector('.ol-price').value = found.price;
+                }
+            }
+            recalcOrderTotal();
+        }
+
+        function readOrderLines() {
+            return Array.from(document.querySelectorAll('#orderLines .order-line')).map(row => ({
+                code: row.querySelector('.ol-code').value.trim(),
+                name: row.querySelector('.ol-name').value.trim(),
+                qty: parseInt(row.querySelector('.ol-qty').value, 10) || 1,
+                price: parseFloat(row.querySelector('.ol-price').value) || 0
+            })).filter(l => l.code || l.name);
+        }
+
+        function recalcOrderTotal() {
+            const total = readOrderLines().reduce((sum, l) => sum + l.price, 0);
+            document.getElementById('orderTotal').innerText = 'Rs. ' + total.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        }
+
+        function setDeliveryValue(value) {
+            const sel = document.getElementById('ord_delivery');
+            const v = value || 'Post Office';
+            if (!Array.from(sel.options).some(o => o.value === v)) {
+                sel.add(new Option(v, v));   // pala orders walata (Standard / Express wage) option ekak add karanawa
+            }
+            sel.value = v;
+        }
+
+        function openOrderModal() {
+            editingOrderId = null;
+            document.getElementById('orderForm').reset();
+            document.getElementById('orderModalTitle').innerText = 'Add New Order / Lead';
+            document.getElementById('orderLines').innerHTML = '';
+            setDeliveryValue('Post Office');
+            addOrderLine();
+            document.getElementById('orderModal').classList.remove('hidden');
+            loadItemCatalog();
+        }
+
+        function openEditOrder(id) {
+            const order = allOrdersData.find(o => Number(o.id) === Number(id));
+            if (!order) return;
+            editingOrderId = order.id;
+            document.getElementById('orderModalTitle').innerText = 'Edit Order';
+            document.getElementById('ord_name').value = order.customer_name || '';
+            document.getElementById('ord_phone').value = order.phone_number || '';
+            document.getElementById('ord_address').value = order.address || '';
+            setDeliveryValue(order.delivery_method);
+            document.getElementById('orderLines').innerHTML = '';
+            orderLines(order).forEach(l => addOrderLine({ code: l.code, name: l.name, qty: l.qty, price: l.price }));
+            document.getElementById('orderModal').classList.remove('hidden');
+            loadItemCatalog();
+        }
+
+        function closeOrderModal() {
+            document.getElementById('orderModal').classList.add('hidden');
+        }
+
+        function updateFileName(input) {
+            const display = document.getElementById('fileNameDisplay');
+            if (input.files && input.files.length > 0) {
+                display.innerText = input.files[0].name;
+                display.classList.add('text-slate-900', 'font-bold');
+            } else {
+                display.innerText = 'Choose Excel File (.xlsx, .xls)';
+                display.classList.remove('text-slate-900', 'font-bold');
+            }
+        }
+
+        // ---------------- ORDERS ----------------
+        function loadOrdersFromDB() {
+            fetch('/api/get_orders')
+            .then(handleAuth)
+            .then(data => {
+                if (Array.isArray(data)) {
+                    allOrdersData = data;
+                } else {
+                    allOrdersData = [];
+                }
+                renderOrdersTable();
+            })
+            .catch(err => {
+                console.error("Error loading orders:", err);
+                allOrdersData = [];
+                renderOrdersTable();
+            });
+        }
+
+        function filterOrders(statusType, btnEl) {
+            currentFilter = statusType;
+            document.querySelectorAll('.filter-btn').forEach(btn => {
+                btn.classList.remove('bg-slate-900', 'text-white');
+                btn.classList.add('bg-white', 'text-slate-700');
+            });
+            if (btnEl) {
+                btnEl.classList.remove('bg-white', 'text-slate-700');
+                btnEl.classList.add('bg-slate-900', 'text-white');
+            }
+
+            const titles = {
+                'ALL': 'All Leads List',
+                'Confirmed': 'Completed Orders (Confirmed List)',
+                'Pending': 'Pending Confirmation (Callback / No Answer List)',
+                'Cancelled': 'Cancelled Leads List',
+                'Postponed': 'Postponed Orders List'
+            };
+            document.getElementById('tableTitle').innerText = titles[statusType] || 'Orders List';
+            renderOrdersTable();
+        }
+
+        function renderOrdersTable() {
+            const tbody = document.getElementById('ordersTableBody');
+            if (!tbody) return;
+            tbody.innerHTML = '';
+
+            const q = (document.getElementById('orderSearch')?.value || '').trim().toLowerCase();
+
+            const filtered = allOrdersData.filter(order => {
+                const st = order.status || 'New Lead';
+                let ok = true;
+                if (currentFilter === 'Confirmed') ok = (st === 'Confirmed');
+                else if (currentFilter === 'Pending') ok = (st === 'Callback' || st === 'No Answer' || st === 'New Lead');
+                else if (currentFilter === 'Cancelled') ok = (st === 'Cancelled');
+                else if (currentFilter === 'Postponed') ok = (st === 'Postponed');
+                if (!ok) return false;
+
+                if (q) {
+                    const hay = [order.customer_name, order.phone_number, order.item_code, order.product_name]
+                        .join(' ').toLowerCase();
+                    return hay.includes(q);
+                }
+                return true;
+            });
+
+            if (filtered.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="10" class="p-4 text-center text-gray-400">No orders found.</td></tr>`;
+                return;
+            }
+
+            filtered.forEach(order => {
+                const cStatus = order.status || 'New Lead';
+                const tr = document.createElement('tr');
+                tr.className = "border-b hover:bg-gray-50";
+                tr.innerHTML = `
+                    <td class="p-3 font-medium text-slate-800">${esc(order.customer_name)}</td>
+                    <td class="p-3 text-slate-600">${esc(order.phone_number)}</td>
+                    <td class="p-3 text-slate-600">${esc(order.address)}</td>
+                    <td class="p-3 font-semibold text-amber-600">${orderLines(order).map(l => esc(l.code || '-')).join('<br>')}</td>
+                    <td class="p-3 text-slate-800 font-semibold">${orderLines(order).map(l => esc(l.name)).join('<br>')}</td>
+                    <td class="p-3 text-slate-600">${orderLines(order).map(l => esc(l.qty)).join('<br>')}</td>
+                    <td class="p-3 text-slate-800 font-bold">Rs. ${(parseFloat(order.amount) || 0).toFixed(2)}</td>
+                    <td class="p-3 text-slate-600 text-xs font-medium">${esc(order.delivery_method || 'Standard')}</td>
+                    <td class="p-3">
+                        <select onchange="onStatusChange(${Number(order.id)}, this.value)" class="border rounded px-2 py-1 text-xs font-bold bg-amber-50 text-amber-800 border-amber-300">
+                            <option value="New Lead" ${cStatus === 'New Lead' ? 'selected' : ''}>New Lead</option>
+                            <option value="Confirmed" ${cStatus === 'Confirmed' ? 'selected' : ''}>Confirm</option>
+                            <option value="Cancelled" ${cStatus === 'Cancelled' ? 'selected' : ''}>Cancel</option>
+                            <option value="Callback" ${cStatus === 'Callback' ? 'selected' : ''}>Callback</option>
+                            <option value="No Answer" ${cStatus === 'No Answer' ? 'selected' : ''}>No Answer</option>
+                            <option value="Postponed" ${cStatus === 'Postponed' ? 'selected' : ''}>Postponed${order.postpone_date ? ' (' + esc(order.postpone_date) + ')' : ''}</option>
+                        </select>
+                    </td>
+                    <td class="p-3"><button type="button" onclick="openEditOrder(${Number(order.id)})" class="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded text-xs font-semibold shadow-sm">Edit</button></td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function orderLines(order) {
+            if (Array.isArray(order.items) && order.items.length) return order.items;
+            return [{ code: order.item_code || '', name: order.product_name || '', qty: order.quantity || 1, price: order.amount || 0 }];
+        }
+
+        // Dan id eken update karanawa
+        function updateOrderStatus(id, newStatus, postponeDate) {
+            fetch('/api/update_order_status', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ id: id, status: newStatus, postpone_date: postponeDate || null })
+            })
+            .then(handleAuth)
+            .then(result => {
+                if (result.status === 'success') {
+                    loadOrdersFromDB();
+                } else {
+                    alert("Failed to update status: " + (result.message || ''));
+                    loadOrdersFromDB();
+                }
+            })
+            .catch(err => console.error("Error updating status:", err));
+        }
+
+        function saveManualOrder(event) {
+            event.preventDefault();
+            const items = readOrderLines();
+            if (!items.length) {
+                alert('Add at least one item.');
+                return;
+            }
+            const orderData = {
+                id: editingOrderId,
+                name: document.getElementById('ord_name').value,
+                phone: document.getElementById('ord_phone').value,
+                address: document.getElementById('ord_address').value,
+                delivery: document.getElementById('ord_delivery').value,
+                items: items,
+                order_date: todayStr()
+            };
+
+            fetch(editingOrderId ? '/api/update_order' : '/api/save_order', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(orderData)
+            })
+            .then(handleAuth)
+            .then(result => {
+                if (result.status === 'success') {
+                    alert(editingOrderId ? "Order updated!" : "Order saved successfully!");
+                    closeOrderModal();
+                    loadOrdersFromDB();
+                } else if (result.status === 'duplicate') {
+                    alert("Warning: This phone number already has an order for these items!");
+                } else {
+                    alert("Error: " + result.message);
+                }
+            })
+            .catch(err => console.error("Error saving order:", err));
+        }
+
+        // Excel upload: okkoma rows ekama request ekakin yawanawa
+        function uploadAndSaveExcelOrders() {
+            const fileInput = document.getElementById('excelOrderFile');
+            if (!fileInput || fileInput.files.length === 0) {
+                alert("Please select an Excel file first!");
+                return;
+            }
+
+            const file = fileInput.files[0];
+            const reader = new FileReader();
+            const btn = document.getElementById('uploadBtn');
+
+            reader.onload = function(e) {
+                try {
+                    const data = new Uint8Array(e.target.result);
+                    const workbook = XLSX.read(data, {type: 'array'});
+                    const sheetName = workbook.SheetNames[0];
+                    const jsonData = XLSX.utils.sheet_to_json(workbook.Sheets[sheetName]);
+
+                    if (!jsonData || jsonData.length === 0) {
+                        alert("Excel file is empty!");
+                        return;
+                    }
+
+                    const today = todayStr();
+
+                    const normKey = (k) => String(k).toLowerCase().replace(/[^a-z0-9]/g, '');
+                    const headers = Object.keys(jsonData[0] || {});
+
+                    const normDelivery = (v) => {
+                        const t = String(v || '').toLowerCase();
+                        if (t.includes('speed')) return 'Speed Post';
+                        if (t.includes('post')) return 'Post Office';
+                        if (t.includes('courier') || t.includes('domex') || t.includes('express')) return 'Courier';
+                        return 'Post Office';
+                    };
+
+                    // ---- item codes hoyana helper: "FB401", "FB401 x2", "FB401, BLC02", item name ----
+                    const codeMap = {}, nameMap = {};
+                    itemCatalog.forEach(c => {
+                        codeMap[c.code.toLowerCase()] = c.code;
+                        if (c.name) nameMap[c.name.trim().toLowerCase()] = c.code;
+                    });
+                    const knownCodes = Object.keys(codeMap);
+                    const escRe = (t) => t.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+                    // text cell eken item lines return karanawa. consumed = cell eka okkoma item walata gihin nam
+                    const matchItems = (text) => {
+                        const lines = [];
+                        let allConsumed = true;
+                        String(text || '').split(/[,;+\n]+/).forEach(part => {
+                            const t = part.trim();
+                            if (!t) return;
+                            let qty = 1, left = t, m;
+                            if ((m = t.match(/^(.+?)\s*[x*×]\s*(\d+)$/i))) { left = m[1].trim(); qty = parseInt(m[2], 10); }
+                            else if ((m = t.match(/^(\d+)\s*[x*×]\s*(.+)$/i))) { qty = parseInt(m[1], 10); left = m[2].trim(); }
+                            const key = left.toLowerCase();
+                            if (codeMap[key]) { lines.push({ code: codeMap[key], qty: qty }); return; }
+                            if (nameMap[key]) { lines.push({ code: nameMap[key], qty: qty }); return; }
+                            // text eka athule code ekak thiyenawada (whole word)
+                            const hits = knownCodes.filter(k => new RegExp('(^|[^a-z0-9])' + escRe(k) + '([^a-z0-9]|$)', 'i').test(left));
+                            if (hits.length) { hits.forEach(k => lines.push({ code: codeMap[k], qty: qty })); allConsumed = false; return; }
+                            allConsumed = false;
+                        });
+                        return { lines: lines, consumed: lines.length > 0 && allConsumed };
+                    };
+
+                    // lines walata name saha price (catalog eken) dala, file price eka apply karanawa
+                    const finishLines = (rawLines, filePrice, fallbackName, fallbackCode) => {
+                        let lines = rawLines.map(l => {
+                            const found = catalogLookup(l.code, l.qty);
+                            return { code: l.code, name: found ? found.name : '', qty: l.qty, price: found ? found.price : 0 };
+                        });
+                        if (!lines.length && (fallbackName || fallbackCode)) {
+                            lines = [{ code: fallbackCode || '', name: fallbackName || '', qty: 1, price: 0 }];
+                        }
+                        if (filePrice > 0 && lines.length) {
+                            const catalogSum = lines.reduce((t, l) => t + l.price, 0);
+                            if (lines.length === 1) lines[0].price = filePrice;
+                            else if (catalogSum === 0) lines[0].price = filePrice;
+                        }
+                        return lines;
+                    };
+
+                    let orders = [];
+
+                    // ---- 1. Header thiyena Excel ----
+                    jsonData.forEach(row => {
+                        const getVal = (keys) => {
+                            const wanted = keys.map(normKey);
+                            for (let rKey in row) {
+                                if (wanted.includes(normKey(rKey))) {
+                                    const v = row[rKey];
+                                    if (v !== undefined && v !== null && String(v).trim() !== '') return v;
+                                }
+                            }
+                            return '';
+                        };
+                        let phone = String(getVal(['Phone', 'Phone Number', 'Phone No', 'Mobile', 'Mobile No', 'Mobile Number', 'Contact', 'Contact No', 'Contact Number', 'Telephone', 'Tel', 'Tel No', 'Phone 1', 'Mobile 1', 'phone_number']) || '').trim().replace(/[\s-]/g, '');
+                        if (/^[0-9]{9}$/.test(phone)) phone = '0' + phone;
+                        const name = String(getVal(['Name', 'Customer Name', 'Customer', 'Receiver Name', 'Receiver', 'Consignee', 'Consignee Name', 'Recipient', 'Full Name', 'customer_name']) || '').trim();
+                        if (!name || !phone) return;
+
+                        const codeText = String(getVal(['Item Code', 'Item Codes', 'Code', 'Codes', 'Product Code', 'SKU', 'item_code']) || '').trim();
+                        const itemText = String(getVal(['Item', 'Items', 'Product', 'Product Name', 'Item Name', 'Description', 'product_name']) || '').trim();
+                        const qtyVal = parseInt(getVal(['Quantity', 'Qty', 'quantity']) || 1, 10) || 1;
+                        const filePrice = parseFloat(getVal(['Price', 'Amount', 'Total', 'COD', 'COD Amount', 'Selling Price', 'amount']) || 0) || 0;
+
+                        let found = matchItems(codeText).lines.concat(matchItems(itemText).lines);
+                        if (found.length === 1 && !/[x*×]\s*\d/i.test(codeText + itemText)) found[0].qty = qtyVal;
+                        orders.push({
+                            name: name, phone: phone,
+                            address: String(getVal(['Address', 'Delivery Address', 'Receiver Address', 'Consignee Address', 'address']) || '').trim(),
+                            items: finishLines(found, filePrice, itemText, codeText),
+                            delivery: normDelivery(getVal(['Delivery', 'Delivery Method', 'delivery_method'])),
+                            order_date: today
+                        });
+                    });
+
+                    // ---- 2. Header nathi Excel: cell eke content eken hoyanawa ----
+                    if (orders.length === 0) {
+                        const raw = XLSX.utils.sheet_to_json(workbook.Sheets[sheetName], { header: 1, raw: true, defval: '' });
+                        raw.forEach(r => {
+                            let phone = '', dateText = '', filePrice = 0, qtyHint = 0;
+                            const texts = [];
+                            let found = [];
+                            r.forEach(cell => {
+                                const t = String(cell === null || cell === undefined ? '' : cell).trim();
+                                if (!t) return;
+                                const digits = t.replace(/[\s-]/g, '');
+                                if (!phone && /^[0-9]{9,12}$/.test(digits)) { phone = digits; return; }
+                                if (!dateText && /^[0-9]{4}-[0-9]{2}-[0-9]{2}/.test(t)) { dateText = t; return; }
+                                if (/^[0-9]+(\.[0-9]+)?$/.test(t)) {
+                                    const n = parseFloat(t);
+                                    if (n >= 100 && !filePrice) { filePrice = n; return; }
+                                    if (n >= 1 && n < 100 && !qtyHint) { qtyHint = Math.round(n); return; }
+                                }
+                                const m = matchItems(t);
+                                if (m.lines.length) found = found.concat(m.lines);
+                                if (!m.consumed) texts.push(t);
+                            });
+                            if (/^[0-9]{9}$/.test(phone)) phone = '0' + phone;
+
+                            let name, address, product = '';
+                            if (found.length) {
+                                const rest = texts.length >= 3 ? texts.slice(1) : texts;   // 3k nam palaweni eka product description eka
+                                name = rest[0] || '';
+                                address = rest.slice(1).join(', ');
+                            } else {
+                                product = texts[0] || '';
+                                name = texts[1] || '';
+                                address = texts.slice(2).join(', ');
+                            }
+                            if (!phone || !name) return;
+                            if (found.length === 1 && qtyHint) found[0].qty = qtyHint;
+                            orders.push({
+                                name: name, phone: phone, address: address,
+                                items: finishLines(found, filePrice, product, ''),
+                                delivery: 'Post Office',
+                                order_date: dateText ? dateText.slice(0, 10) : today
+                            });
+                        });
+                    }
+
+                    if (orders.length === 0) {
+                        alert('[v4] No Name / Phone found in this Excel.\nFirst row: ' + headers.join(' | ') + '\nRows read: ' + jsonData.length);
+                        return;
+                    }
+
+                    // Eka customer ekage (phone + date) rows godak nam ekama order ekakata item godak widiha ekathu karanawa
+                    const merged = {};
+                    orders.forEach(o => {
+                        const key = o.phone + '|' + o.order_date;
+                        if (merged[key]) merged[key].items = merged[key].items.concat(o.items);
+                        else merged[key] = o;
+                    });
+                    orders = Object.values(merged);
+
+                    btn.disabled = true;
+                    btn.classList.add('opacity-60');
+
+                    fetch('/api/bulk_save_orders', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ orders: orders })
+                    })
+                    .then(handleAuth)
+                    .then(res => {
+                        if (res.status === 'success') {
+                            alert(`Excel Upload Complete!\n- Added New Leads: ${res.added}\n- Duplicates Skipped: ${res.duplicates}\n- Invalid Rows Skipped: ${res.skipped}`);
+                            fileInput.value = '';
+                            updateFileName(fileInput);
+                            loadOrdersFromDB();
+                        } else {
+                            alert("Error: " + res.message);
+                        }
+                    })
+                    .catch(err => {
+                        console.error("Bulk upload error:", err);
+                        alert("Upload failed.");
+                    })
+                    .finally(() => {
+                        btn.disabled = false;
+                        btn.classList.remove('opacity-60');
+                    });
+                } catch (err) {
+                    console.error("Excel parse error:", err);
+                    alert("Error reading Excel file.");
+                }
+            };
+            loadItemCatalog().then(() => reader.readAsArrayBuffer(file));
+        }
+
+        // ---------------- POSTPONE ----------------
+        let postponeOrderId = null;
+
+        function onStatusChange(id, value) {
+            if (value === 'Postponed') {
+                openPostponeModal(id);
+            } else {
+                updateOrderStatus(id, value);
+                setTimeout(loadNotifications, 800);
+            }
+        }
+
+        function openPostponeModal(id) {
+            postponeOrderId = id;
+            const input = document.getElementById('postponeDate');
+            input.min = new Date().toISOString().split('T')[0];
+            input.value = '';
+            document.getElementById('postponeModal').classList.remove('hidden');
+        }
+
+        function closePostponeModal() {
+            document.getElementById('postponeModal').classList.add('hidden');
+            postponeOrderId = null;
+            renderOrdersTable();   // dropdown eka kalin status ekata ayeth set karanawa
+        }
+
+        function confirmPostpone() {
+            const dateVal = document.getElementById('postponeDate').value;
+            if (!dateVal) {
+                alert('Please select a postpone date.');
+                return;
+            }
+            const id = postponeOrderId;
+            document.getElementById('postponeModal').classList.add('hidden');
+            postponeOrderId = null;
+            updateOrderStatus(id, 'Postponed', dateVal);
+            setTimeout(loadNotifications, 800);
+        }
+
+        // ---------------- NOTIFICATIONS ----------------
+        function loadNotifications() {
+            fetch('/api/notifications')
+            .then(handleAuth)
+            .then(data => {
+                const list = (data && Array.isArray(data.notifications)) ? data.notifications : [];
+                const badge = document.getElementById('notifBadge');
+                if (badge) {
+                    if (list.length > 0) {
+                        badge.innerText = list.length;
+                        badge.classList.remove('hidden');
+                    } else {
+                        badge.classList.add('hidden');
+                    }
+                }
+                renderNotifications(list);
+            })
+            .catch(err => console.error("Error loading notifications:", err));
+        }
+
+        function renderNotifications(list) {
+            const box = document.getElementById('notificationList');
+            if (!box) return;
+
+            if (list.length === 0) {
+                box.innerHTML = `<div class="bg-emerald-50 border border-emerald-200 text-emerald-700 p-4 rounded-xl text-sm font-semibold">All good! No notifications right now.</div>`;
+                return;
+            }
+
+            const groups = [
+                { type: 'low_stock', title: 'Low Stock Alerts', icon: 'fa-triangle-exclamation' },
+                { type: 'budget', title: 'Budget Reminder', icon: 'fa-wallet' },
+                { type: 'postponed', title: 'Postponed Orders (Follow-up Reminders)', icon: 'fa-phone-volume' }
+            ];
+
+            let html = '';
+            groups.forEach(g => {
+                const items = list.filter(n => n.type === g.type);
+                if (items.length === 0) return;
+
+                html += `<div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-200">
+                    <h3 class="text-lg font-bold mb-3 text-slate-800"><i class="fa-solid ${g.icon} text-amber-500 mr-2"></i>${g.title} (${items.length})</h3>
+                    <div class="space-y-2">`;
+                items.forEach(n => {
+                    const cls = n.level === 'danger'
+                        ? 'bg-red-50 border-red-200 text-red-700'
+                        : 'bg-amber-50 border-amber-200 text-amber-800';
+                    html += `<div class="border ${cls} p-3 rounded-xl text-sm">
+                        <p class="font-bold">${esc(n.title)}</p>
+                        <p class="text-xs mt-0.5">${esc(n.message)}</p>
+                    </div>`;
+                });
+                html += `</div></div>`;
+            });
+            box.innerHTML = html;
+        }
+
+        // ---------------- BUDGET ----------------
+        function fmtMoney(n) {
+            const v = parseFloat(n) || 0;
+            return (v < 0 ? '- Rs. ' : 'Rs. ') + Math.abs(v).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        }
+
+        function todayStr() {
+            const d = new Date();
+            const mm = String(d.getMonth() + 1).padStart(2, '0');
+            const dd = String(d.getDate()).padStart(2, '0');
+            return d.getFullYear() + '-' + mm + '-' + dd;
+        }
+
+        function budPost(url, payload) {
+            return fetch(url, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            }).then(handleAuth);
+        }
+
+        function renderCards(containerId, cards) {
+            const box = document.getElementById(containerId);
+            if (!box) return;
+            box.innerHTML = cards.map(c => {
+                let color = 'text-slate-800';
+                if (c.signed) color = c.value >= 0 ? 'text-emerald-600' : 'text-red-600';
+                const text = c.count ? String(c.value) : fmtMoney(c.value);
+                return `<div class="bg-white p-5 rounded-2xl shadow-sm border border-gray-200">
+                    <p class="text-xs font-semibold text-gray-500 uppercase">${esc(c.label)}</p>
+                    <p class="text-2xl font-bold mt-1 ${color}">${esc(text)}</p>
+                    ${c.note ? `<p class="text-[11px] text-gray-400 mt-1">${esc(c.note)}</p>` : ''}
+                </div>`;
+            }).join('');
+        }
+
+        let budPane = 'daily';
+
+        function budSwitch(name, btn) {
+            budPane = name;
+            ['daily', 'month', 'ads', 'expenses', 'settings'].forEach(p => {
+                const el = document.getElementById('bud-pane-' + p);
+                if (el) el.classList.toggle('hidden', p !== name);
+            });
+            document.querySelectorAll('.bud-tab').forEach(b => {
+                b.classList.remove('bg-slate-900', 'text-white');
+                b.classList.add('bg-white', 'text-slate-700');
+            });
+            const active = btn || document.querySelector('.bud-tab[data-pane="' + name + '"]');
+            if (active) {
+                active.classList.remove('bg-white', 'text-slate-700');
+                active.classList.add('bg-slate-900', 'text-white');
+            }
+            loadBudgetPane(name);
+        }
+
+        // switchTab('budget') ekata
+        function loadBudget() {
+            const setDefault = (id, value) => {
+                const el = document.getElementById(id);
+                if (el && !el.value) el.value = value;
+            };
+            setDefault('bud_day', todayStr());
+            setDefault('bud_month', todayStr().slice(0, 7));
+            setDefault('ad_date', todayStr());
+            setDefault('ex_start', todayStr().slice(0, 7));
+            loadBudgetPane(budPane);
+        }
+
+        function loadBudgetPane(name) {
+            if (name === 'daily') loadBudgetDay();
+            else if (name === 'month') loadBudgetMonth();
+            else if (name === 'ads') loadAdCosts();
+            else if (name === 'expenses') loadMonthlyExpenses();
+            else if (name === 'settings') loadBudgetSettings();
+        }
+
+        function showBudgetError(tbodyId, cols, data) {
+            const tbody = document.getElementById(tbodyId);
+            if (tbody) {
+                tbody.innerHTML = `<tr><td colspan="${cols}" class="p-4 text-center text-red-500">Error: ${esc(data && data.message)}</td></tr>`;
+            }
+        }
+
+        // ----- Daily profit (parcel budget) -----
+        function costInput(cls, value, custom) {
+            const v = Number(value) || 0;
+            return `<input type="number" step="0.01" min="0" value="${v}" data-orig="${v}" data-ov="${custom ? '1' : '0'}" class="w-24 border rounded px-2 py-1 text-xs ${cls} ${custom ? 'border-amber-400 bg-amber-50' : 'border-gray-300'}">`;
+        }
+
+        let budMethods = [];
+        let budDayParcels = [];
+
+        function deliveryMethodSelect(current) {
+            const names = budMethods.map(m => m.method);
+            if (current && !names.some(n => n.toLowerCase() === String(current).toLowerCase())) names.unshift(current);
+            const opts = names.map(n => `<option value="${esc(n)}" ${n.toLowerCase() === String(current).toLowerCase() ? 'selected' : ''}>${esc(n)}</option>`).join('');
+            return `<select onchange="pickDeliveryMethod(this)" class="mt-1 border border-gray-300 rounded text-[10px] px-1 py-0.5 w-24">${opts}</select>`;
+        }
+
+        // Courier / Post Office (SpeedPost) select karama e method eke cost eka delivery box ekata enawa. Save karanna.
+        function pickDeliveryMethod(sel) {
+            const m = budMethods.find(x => x.method === sel.value);
+            const input = sel.closest('td').querySelector('.pc-delivery');
+            if (m && m.cost !== null && m.cost !== undefined) input.value = Number(m.cost);
+            input.classList.add('border-amber-400', 'bg-amber-50');
+        }
+
+        function downloadDayExcel() {
+            if (!budDayParcels.length) { alert('No parcels to download.'); return; }
+            const rows = budDayParcels.map(p => ({
+                'Code': p.item_code, 'Name': p.product_name, 'Category': p.category,
+                'Quantity': p.quantity, 'Selling price': p.sale, 'Item cost': p.product_cost,
+                'Packing cost': p.packing_cost, 'Delivery Cost': p.delivery_cost, 'Ad cost': p.ad_share,
+                'Extra Cost': p.extra_cost, 'Full cost': p.total_cost, 'Profit': p.profit
+            }));
+            const ws = XLSX.utils.json_to_sheet(rows);
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, 'Parcels');
+            XLSX.writeFile(wb, 'parcels_' + (document.getElementById('bud_day').value || todayStr()) + '.xlsx');
+        }
+
+        function loadBudgetDay() {
+            const day = document.getElementById('bud_day').value || todayStr();
+            fetch('/api/budget/settings').then(handleAuth)
+            .then(st => { budMethods = (st && st.delivery_methods) || []; })
+            .catch(() => { budMethods = []; })
+            .then(() => fetch('/api/budget/day?date=' + encodeURIComponent(day)))
+            .then(handleAuth)
+            .then(data => {
+                if (!data || !data.summary) {
+                    showBudgetError('budParcelBody', 11, data);
+                    return;
+                }
+                const s = data.summary;
+                renderCards('budDayCards', [
+                    { label: 'Parcels', value: s.parcels, count: true },
+                    { label: 'Total Sales', value: s.sales },
+                    { label: 'Parcel Costs', value: s.parcel_costs, note: 'Item + packing + delivery + extra' },
+                    { label: 'Ad Cost', value: s.ad_cost, note: s.parcels ? 'Per parcel: ' + fmtMoney(s.ad_cost / s.parcels) : 'No parcels this day' },
+                    { label: 'Gross Profit', value: s.gross_profit, signed: true },
+                    { label: 'Monthly Expenses (day share)', value: s.expense_share },
+                    { label: 'Savings (day share)', value: s.savings_share },
+                    { label: 'Net Profit', value: s.net_profit, signed: true, note: 'After expenses and savings' }
+                ]);
+
+                const tbody = document.getElementById('budParcelBody');
+                if (data.parcels.length === 0) {
+                    tbody.innerHTML = `<tr><td colspan="13" class="p-4 text-center text-gray-400">No confirmed parcels for this date.</td></tr>`;
+                    return;
+                }
+                tbody.innerHTML = '';
+                budDayParcels = [];
+                data.parcels.forEach(p => {
+                    const tr = document.createElement('tr');
+                    tr.className = 'hover:bg-gray-50';
+                    tr.dataset.orderId = p.id;
+                    tr.innerHTML = `
+                        <td class="p-3 font-semibold">${esc(p.item_code)}</td>
+                        <td class="p-3">${esc(p.product_name)}<div class="text-xs text-gray-400">${esc(p.customer_name)} - ${esc(p.phone_number)}</div></td>
+                        <td class="p-3 text-xs">${esc(p.category)}</td>
+                        <td class="p-3">${esc(p.quantity)}</td>
+                        <td class="p-3 font-bold">${fmtMoney(p.sale)}</td>
+                        <td class="p-3">${costInput('pc-product', p.product_cost, p.custom.product)}</td>
+                        <td class="p-3">${costInput('pc-packing', p.packing_cost, p.custom.packing)}</td>
+                        <td class="p-3">${costInput('pc-delivery', p.delivery_cost, p.custom.delivery)}${deliveryMethodSelect(p.delivery_method)}</td>
+                        <td class="p-3 text-slate-600">${fmtMoney(p.ad_share)}</td>
+                        <td class="p-3">${costInput('pc-extra', p.extra_cost, p.custom.extra)}</td>
+                        <td class="p-3 font-semibold">${fmtMoney(p.total_cost)}</td>
+                        <td class="p-3 font-bold ${p.profit >= 0 ? 'text-emerald-600' : 'text-red-600'}">${fmtMoney(p.profit)}</td>
+                        <td class="p-3"><button type="button" onclick="saveParcelCost(this)" class="bg-emerald-500 hover:bg-emerald-600 text-white px-3 py-1 rounded text-xs font-semibold shadow-sm">Save</button></td>
+                    `;
+                    budDayParcels.push(p);
+                    tbody.appendChild(tr);
+                });
+            })
+            .catch(err => console.error("Error loading daily budget:", err));
+        }
+
+        // Wenas karapu (nathnam kalin custom karapu) cost witharak yawanawa. Hisa karoth default ekata yanawa.
+        function costValue(input) {
+            const val = input.value.trim();
+            if (val === '') return null;
+            if (input.dataset.ov === '1' || Number(val) !== Number(input.dataset.orig)) return val;
+            return null;
+        }
+
+        function saveParcelCost(btn) {
+            const row = btn.closest('tr');
+            if (!row) return;
+            budPost('/api/budget/parcel_cost', {
+                order_id: Number(row.dataset.orderId),
+                product_cost: costValue(row.querySelector('.pc-product')),
+                packing_cost: costValue(row.querySelector('.pc-packing')),
+                delivery_cost: costValue(row.querySelector('.pc-delivery')),
+                extra_cost: costValue(row.querySelector('.pc-extra'))
+            })
+            .then(res => {
+                if (res.status === 'success') {
+                    loadBudgetDay();
+                } else {
+                    alert("Error: " + res.message);
+                }
+            })
+            .catch(err => console.error("Error saving parcel cost:", err));
+        }
+
+        // ----- Monthly summary -----
+        function openBudgetDay(dateStr) {
+            document.getElementById('bud_day').value = dateStr;
+            budSwitch('daily');
+        }
+
+        function loadBudgetMonth() {
+            const month = document.getElementById('bud_month').value || todayStr().slice(0, 7);
+            fetch('/api/budget/month?month=' + encodeURIComponent(month))
+            .then(handleAuth)
+            .then(data => {
+                if (!data || !data.summary) {
+                    showBudgetError('budMonthBody', 8, data);
+                    return;
+                }
+                const s = data.summary;
+                renderCards('budMonthCards', [
+                    { label: 'Parcels', value: s.parcels, count: true },
+                    { label: 'Total Sales', value: s.sales },
+                    { label: 'Parcel Costs', value: s.parcel_costs, note: 'Item + packing + delivery + extra' },
+                    { label: 'Ad Cost', value: s.ad_cost },
+                    { label: 'Gross Profit', value: s.gross_profit, signed: true },
+                    { label: 'Monthly Expenses', value: s.expenses },
+                    { label: 'Savings', value: s.savings },
+                    { label: 'Final Profit', value: s.net_profit, signed: true, note: 'After expenses and savings' }
+                ]);
+
+                const tbody = document.getElementById('budMonthBody');
+                if (data.days.length === 0) {
+                    tbody.innerHTML = `<tr><td colspan="8" class="p-4 text-center text-gray-400">No parcels or ad cost in this month.</td></tr>`;
+                    return;
+                }
+                tbody.innerHTML = '';
+                data.days.forEach(d => {
+                    const tr = document.createElement('tr');
+                    tr.className = 'hover:bg-gray-50';
+                    tr.innerHTML = `
+                        <td class="p-3"><button type="button" onclick="openBudgetDay('${esc(d.date)}')" class="text-amber-600 font-semibold underline">${esc(d.date)}</button></td>
+                        <td class="p-3">${esc(d.parcels)}</td>
+                        <td class="p-3">${fmtMoney(d.sales)}</td>
+                        <td class="p-3">${fmtMoney(d.parcel_costs)}</td>
+                        <td class="p-3">${fmtMoney(d.ad_cost)}</td>
+                        <td class="p-3 font-bold ${d.gross_profit >= 0 ? 'text-emerald-600' : 'text-red-600'}">${fmtMoney(d.gross_profit)}</td>
+                        <td class="p-3 text-slate-600">${fmtMoney(d.fixed_share)}</td>
+                        <td class="p-3 font-bold ${d.net_profit >= 0 ? 'text-emerald-600' : 'text-red-600'}">${fmtMoney(d.net_profit)}</td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+            })
+            .catch(err => console.error("Error loading monthly budget:", err));
+        }
+
+        // ----- Daily ad cost -----
+        function loadAdCosts() {
+            fetch('/api/budget/ad_costs')
+            .then(handleAuth)
+            .then(data => {
+                const tbody = document.getElementById('adCostBody');
+                if (!Array.isArray(data)) {
+                    showBudgetError('adCostBody', 3, data);
+                    return;
+                }
+                if (data.length === 0) {
+                    tbody.innerHTML = `<tr><td colspan="3" class="p-4 text-center text-gray-400">No ad cost entered yet.</td></tr>`;
+                    return;
+                }
+                tbody.innerHTML = '';
+                data.forEach(r => {
+                    const tr = document.createElement('tr');
+                    tr.className = 'hover:bg-gray-50';
+                    tr.innerHTML = `
+                        <td class="p-3">${esc(r.ad_date)}</td>
+                        <td class="p-3 font-bold">${fmtMoney(r.amount)}</td>
+                        <td class="p-3"><button type="button" onclick="editAdCost('${esc(r.ad_date)}', ${Number(r.amount)})" class="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded text-xs font-semibold">Edit</button></td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+            })
+            .catch(err => console.error("Error loading ad costs:", err));
+        }
+
+        function editAdCost(dateStr, amount) {
+            document.getElementById('ad_date').value = dateStr;
+            document.getElementById('ad_amount').value = amount;
+            document.getElementById('ad_amount').focus();
+        }
+
+        function saveAdCost(event) {
+            event.preventDefault();
+            budPost('/api/budget/ad_cost', {
+                ad_date: document.getElementById('ad_date').value,
+                amount: parseFloat(document.getElementById('ad_amount').value)
+            })
+            .then(res => {
+                if (res.status === 'success') {
+                    document.getElementById('ad_amount').value = '';
+                    loadAdCosts();
+                    loadNotifications();
+                } else {
+                    alert("Error: " + res.message);
+                }
+            })
+            .catch(err => console.error("Error saving ad cost:", err));
+        }
+
+        // ----- Monthly expenses and savings -----
+        function loadMonthlyExpenses() {
+            fetch('/api/budget/monthly_expenses')
+            .then(handleAuth)
+            .then(data => {
+                if (!data || !Array.isArray(data.items)) {
+                    showBudgetError('expenseBody', 5, data);
+                    return;
+                }
+                const t = data.totals;
+                renderCards('budExpenseCards', [
+                    { label: 'Monthly Expenses (this month)', value: t.expenses },
+                    { label: 'Monthly Savings (this month)', value: t.savings },
+                    { label: 'Per Day Share', value: (t.expenses + t.savings) / t.days_in_month, note: 'Taken from each day profit' }
+                ]);
+
+                const tbody = document.getElementById('expenseBody');
+                if (data.items.length === 0) {
+                    tbody.innerHTML = `<tr><td colspan="5" class="p-4 text-center text-gray-400">No monthly expenses added yet.</td></tr>`;
+                    return;
+                }
+                tbody.innerHTML = '';
+                data.items.forEach(r => {
+                    const isSavings = r.category === 'Savings';
+                    const tr = document.createElement('tr');
+                    tr.className = 'hover:bg-gray-50';
+                    tr.innerHTML = `
+                        <td class="p-3 font-medium text-slate-800">${esc(r.name)}</td>
+                        <td class="p-3"><span class="px-2 py-1 rounded text-xs font-bold ${isSavings ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700'}">${esc(r.category)}</span></td>
+                        <td class="p-3 font-bold">${fmtMoney(r.amount)}</td>
+                        <td class="p-3">${esc(r.start_month)}</td>
+                        <td class="p-3"><button type="button" onclick="deleteMonthlyExpense(${Number(r.id)})" class="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded text-xs font-semibold">Delete</button></td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+            })
+            .catch(err => console.error("Error loading monthly expenses:", err));
+        }
+
+        function addMonthlyExpense(event) {
+            event.preventDefault();
+            const form = event.target;
+            budPost('/api/budget/monthly_expenses', {
+                name: document.getElementById('ex_name').value,
+                category: document.getElementById('ex_category').value,
+                amount: parseFloat(document.getElementById('ex_amount').value),
+                start_month: document.getElementById('ex_start').value
+            })
+            .then(res => {
+                if (res.status === 'success') {
+                    form.reset();
+                    document.getElementById('ex_start').value = todayStr().slice(0, 7);
+                    loadMonthlyExpenses();
+                } else {
+                    alert("Error: " + res.message);
+                }
+            })
+            .catch(err => console.error("Error adding monthly expense:", err));
+        }
+
+        function deleteMonthlyExpense(id) {
+            if (!confirm('Delete this monthly expense? It will be removed from all months.')) return;
+            budPost('/api/budget/monthly_expenses/delete', { id: id })
+            .then(res => {
+                if (res.status === 'success') {
+                    loadMonthlyExpenses();
+                } else {
+                    alert("Error: " + res.message);
+                }
+            })
+            .catch(err => console.error("Error deleting monthly expense:", err));
+        }
+
+        // ----- Cost settings (item costs, delivery costs, defaults) -----
+        function addDeliveryMethodRow(method, cost) {
+            const tbody = document.getElementById('deliveryCostBody');
+            const hints = { standard: 'Standard COD', express: 'Courier (Express / Domex)', speedpost: 'Post Office (Speed Post)' };
+            const hint = hints[String(method).toLowerCase()];
+            const tr = document.createElement('tr');
+            tr.dataset.method = method;
+            tr.innerHTML = `
+                <td class="p-3 font-medium text-slate-800">${esc(method)}${hint ? `<div class="text-xs text-gray-400">${esc(hint)}</div>` : ''}</td>
+                <td class="p-3"><input type="number" step="0.01" min="0" value="${cost === null || cost === undefined ? '' : Number(cost)}" placeholder="default" class="w-32 border border-gray-300 rounded px-2 py-1 text-xs dc-cost"></td>
+            `;
+            tbody.appendChild(tr);
+            return tr;
+        }
+
+        function addDeliveryMethod() {
+            const input = document.getElementById('set_new_method');
+            const name = input.value.trim();
+            if (!name) return;
+            const exists = Array.from(document.querySelectorAll('#deliveryCostBody tr'))
+                .some(tr => tr.dataset.method.toLowerCase() === name.toLowerCase());
+            if (exists) {
+                alert('This delivery method is already in the list.');
+                return;
+            }
+            addDeliveryMethodRow(name, null).querySelector('.dc-cost').focus();
+            input.value = '';
+        }
+
+        function findItemCostRow(code, qty) {
+            return Array.from(document.querySelectorAll('#itemCostBody tr'))
+                .find(tr => (tr.dataset.code || '').toLowerCase() === String(code).toLowerCase()
+                            && Number(tr.dataset.qty) === Number(qty));
+        }
+
+        function addItemCostRow(it) {
+            const tbody = document.getElementById('itemCostBody');
+            const qty = Number(it.qty) || 1;
+            const tr = document.createElement('tr');
+            tr.dataset.code = it.code;
+            tr.dataset.qty = qty;
+            tr.dataset.name = it.name || '';
+            tr.dataset.category = it.category || '';
+            tr.innerHTML = `
+                <td class="p-3 font-semibold">${esc(it.code)}</td>
+                <td class="p-3">${esc(it.name)}</td>
+                <td class="p-3 text-xs">${esc(it.category)}</td>
+                <td class="p-3">${qty}</td>
+                <td class="p-3"><input type="number" step="0.01" min="0" value="${Number(it.cost_price) || 0}" class="w-28 border border-gray-300 rounded px-2 py-1 text-xs ic-cost"></td>
+                <td class="p-3"><input type="number" step="0.01" min="0" value="${it.packing_cost === null || it.packing_cost === undefined ? '' : Number(it.packing_cost)}" placeholder="default" class="w-28 border border-gray-300 rounded px-2 py-1 text-xs ic-packing"></td>
+            `;
+            tbody.appendChild(tr);
+            return tr;
+        }
+
+        function loadBudgetSettings() {
+            fetch('/api/budget/settings')
+            .then(handleAuth)
+            .then(data => {
+                if (!data || !Array.isArray(data.items)) {
+                    showBudgetError('itemCostBody', 6, data);
+                    return;
+                }
+                document.getElementById('set_packing').value = data.default_packing_cost;
+                document.getElementById('set_delivery').value = data.default_delivery_cost;
+
+                document.getElementById('deliveryCostBody').innerHTML = '';
+                data.delivery_methods.forEach(m => addDeliveryMethodRow(m.method, m.cost));
+
+                const tbody = document.getElementById('itemCostBody');
+                tbody.innerHTML = '';
+                if (data.items.length === 0) {
+                    tbody.innerHTML = `<tr><td colspan="6" class="p-4 text-center text-gray-400">No items found. Add items in Items & Availability first, or upload an Excel file.</td></tr>`;
+                    return;
+                }
+                data.items.forEach(it => addItemCostRow(it));
+            })
+            .catch(err => console.error("Error loading budget settings:", err));
+        }
+
+        function saveBudgetSettings() {
+            const items = Array.from(document.querySelectorAll('#itemCostBody tr[data-code]')).map(tr => ({
+                code: tr.dataset.code,
+                qty: Number(tr.dataset.qty) || 1,
+                name: tr.dataset.name || '',
+                category: tr.dataset.category || '',
+                cost_price: tr.querySelector('.ic-cost').value,
+                packing_cost: tr.querySelector('.ic-packing').value
+            }));
+            const methods = Array.from(document.querySelectorAll('#deliveryCostBody tr[data-method]')).map(tr => ({
+                method: tr.dataset.method,
+                cost: tr.querySelector('.dc-cost').value
+            }));
+
+            budPost('/api/budget/settings', {
+                default_packing_cost: document.getElementById('set_packing').value,
+                default_delivery_cost: document.getElementById('set_delivery').value,
+                item_costs: items,
+                delivery_methods: methods
+            })
+            .then(res => {
+                if (res.status === 'success') {
+                    alert("Cost settings saved!");
+                    loadBudgetSettings();
+                } else {
+                    alert("Error: " + res.message);
+                }
+            })
+            .catch(err => console.error("Error saving budget settings:", err));
+        }
+
+        function downloadItemCostTemplate() {
+            const rows = Array.from(document.querySelectorAll('#itemCostBody tr[data-code]')).map(tr => ({
+                'Code': tr.dataset.code,
+                'Name': tr.dataset.name || '',
+                'Category': tr.dataset.category || '',
+                'Quantity': Number(tr.dataset.qty) || 1,
+                'Item cost': tr.querySelector('.ic-cost').value,
+                'Packing cost': tr.querySelector('.ic-packing').value
+            }));
+            if (rows.length === 0) rows.push({ 'Code': '', 'Name': '', 'Category': '', 'Quantity': 1, 'Item cost': '', 'Packing cost': '' });
+            const ws = XLSX.utils.json_to_sheet(rows);
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, 'Item Costs');
+            XLSX.writeFile(wb, 'item_costs.xlsx');
+        }
+
+        // Excel eken item cost / packing cost item code walin gannawa. Save Settings click karanna one.
+        function importItemCostsFromExcel(input) {
+            const file = input.files && input.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+
+            reader.onload = function(e) {
+                try {
+                    const wb = XLSX.read(new Uint8Array(e.target.result), { type: 'array' });
+                    const rows = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]]);
+                    let updated = 0, added = 0;
+
+                    rows.forEach(row => {
+                        const get = (keys) => {
+                            for (const k of keys) {
+                                for (const rk in row) {
+                                    if (rk.trim().toLowerCase() === k) return row[rk];
+                                }
+                            }
+                            return '';
+                        };
+                        const code = String(get(['code', 'item code', 'itemcode', 'item_code'])).trim();
+                        if (!code) return;
+                        const cost = get(['item cost', 'itemcost', 'cost', 'cost price', 'costprice', 'cost_price']);
+                        const packing = get(['packing cost', 'packingcost', 'packing', 'packing_cost']);
+                        const name = String(get(['name', 'item name', 'itemname'])).trim();
+                        const category = String(get(['category'])).trim();
+                        const qty = parseInt(get(['quantity', 'qty']), 10) || 1;
+
+                        let tr = findItemCostRow(code, qty);
+                        if (!tr) {
+                            tr = addItemCostRow({ code: code, qty: qty, name: name, category: category, cost_price: 0, packing_cost: null });
+                            added++;
+                        } else {
+                            updated++;
+                        }
+                        if (cost !== '') tr.querySelector('.ic-cost').value = cost;
+                        if (packing !== '') tr.querySelector('.ic-packing').value = packing;
+                    });
+
+                    alert('Excel loaded: ' + updated + ' item(s) updated, ' + added + ' new item(s). Press "Save Settings" to save.');
+                } catch (err) {
+                    console.error("Excel parse error:", err);
+                    alert("Error reading Excel file.");
+                }
+                input.value = '';
+            };
+            reader.readAsArrayBuffer(file);
+        }
+
+        // Page eka open wenakota saha minute ekakata parak notifications check karanawa
+        loadNotifications();
+        setInterval(loadNotifications, 60000);
+
+        // ---------------- ITEMS ----------------
+        function loadInventoryFromExcel() {
+            fetch('/api/get_items')
+            .then(handleAuth)
+            .then(data => {
+                const tbody = document.getElementById('inventoryTableBody');
+                if (!tbody) return;
+                tbody.innerHTML = '';
+
+                if (!Array.isArray(data)) {
+                    tbody.innerHTML = `<tr><td colspan="6" class="p-4 text-center text-red-500">Error loading items: ${esc(data && data.message)}</td></tr>`;
+                    return;
+                }
+                if (data.length === 0) {
+                    tbody.innerHTML = `<tr><td colspan="6" class="p-4 text-center text-gray-400">No items found in Excel file.</td></tr>`;
+                    return;
+                }
+
+                data.forEach(item => {
+                    const stock = parseInt(item.Stock) || 0;
+                    const minStock = parseInt(item.MinStock) || 10;
+                    const low = stock <= minStock;
+
+                    const tr = document.createElement('tr');
+                    tr.className = low ? 'bg-red-50' : '';
+                    tr.innerHTML = `
+                        <td class="p-3 font-semibold item-code-cell">${esc(item.Code)}</td>
+                        <td class="p-3 item-name-cell">${esc(item.Name)}</td>
+                        <td class="p-3">${esc(item.Category)}</td>
+                        <td class="p-3">
+                            <input type="number" value="${stock}" class="w-16 border rounded px-2 py-1 text-xs stock-qty-input font-bold ${low ? 'text-red-600 border-red-400' : 'text-blue-600'}">
+                            ${low ? '<span class="ml-2 text-[10px] font-bold text-red-600 uppercase">Low Stock</span>' : ''}
+                        </td>
+                        <td class="p-3"><input type="number" value="${minStock}" class="w-14 border rounded px-2 py-1 text-xs min-stock-input"></td>
+                        <td class="p-3 text-center"><button type="button" onclick="saveItem(this)" class="bg-emerald-500 hover:bg-emerald-600 text-white px-3 py-1 rounded text-xs font-semibold shadow-sm">Save to Excel</button></td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+            })
+            .catch(err => console.error("Error loading items:", err));
+        }
+
+        function saveItem(btn) {
+            const row = btn.closest('tr');
+            if (!row) return;
+            const itemData = {
+                code: row.querySelector('.item-code-cell').innerText.trim(),
+                name: row.querySelector('.item-name-cell').innerText.trim(),
+                category: row.querySelectorAll('td')[2].innerText.trim(),
+                stock: parseInt(row.querySelector('.stock-qty-input').value) || 0,
+                min_stock: parseInt(row.querySelector('.min-stock-input').value) || 10
+            };
+
+            fetch('/api/save_item', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(itemData)
+            })
+            .then(handleAuth)
+            .then(result => {
+                if (result.status === 'success') {
+                    alert("Item saved to items.xlsx successfully!");
+                    loadInventoryFromExcel();
+                } else {
+                    alert("Error: " + result.message);
+                }
+            })
+            .catch(err => console.error("Error saving item:", err));
+        }
+
+        function addNewItem() {
+            const code = prompt('Enter Item Code (e.g., BL002):');
+            if (!code) return;
+            const name = prompt('Enter Item Name / Description:');
+            if (!name) return;
+            const category = prompt('Enter Category:', 'Jewelry');
+            const stock = parseInt(prompt('Enter Initial Stock Quantity:', '50')) || 0;
+            const minStock = parseInt(prompt('Enter Min Stock Alert:', '10')) || 10;
+
+            const itemData = { code, name, category, stock, min_stock: minStock };
+
+            fetch('/api/save_item', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(itemData)
+            })
+            .then(handleAuth)
+            .then(result => {
+                if (result.status === 'success') {
+                    alert("New item added and saved to items.xlsx!");
+                    loadInventoryFromExcel();
+                } else {
+                    alert("Error: " + result.message);
+                }
+            })
+            .catch(err => console.error("Error adding new item:", err));
+        }
+    </script>
+</body>
+</html>

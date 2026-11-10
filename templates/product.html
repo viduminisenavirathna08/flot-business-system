@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Products & Inventory - 24K Shine FLOT</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 font-sans">
+    <div class="flex h-screen">
+        <!-- Sidebar -->
+        <div class="w-64 bg-gray-900 text-white flex flex-col">
+            <div class="p-5 text-2xl font-bold tracking-wider text-yellow-400">24K Shine FLOT</div>
+            <nav class="flex-1 px-4 space-y-2 mt-4">
+                <a href="/" class="block py-2.5 px-4 rounded hover:bg-gray-800 transition">Dashboard</a>
+                <a href="/product" class="block py-2.5 px-4 rounded bg-gray-800 text-yellow-400 font-semibold">Products / Inventory</a>
+                <a href="/customers" class="block py-2.5 px-4 rounded hover:bg-gray-800 transition">Customers / Leads</a>
+                <a href="/logout" class="block py-2.5 px-4 rounded text-red-400 hover:bg-gray-800 transition mt-10">Logout</a>
+            </nav>
+        </div>
+
+        <!-- Main Content -->
+        <div class="flex-1 flex flex-col overflow-y-auto">
+            <header class="bg-white shadow p-4 flex justify-between items-center">
+                <h1 class="text-xl font-bold text-gray-800">Inventory Management (Excel Based)</h1>
+            </header>
+            
+            <main class="p-6">
+                <!-- Add / Update Item Form -->
+                <div class="bg-white p-6 rounded-lg shadow mb-6">
+                    <h2 class="text-lg font-bold mb-4 text-gray-700">Add Item (Directly saves to items.xlsx)</h2>
+                    <form id="itemForm" onsubmit="saveItem(event)" class="grid grid-cols-1 md:grid-cols-5 gap-4">
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-600 mb-1">Item Code</label>
+                            <input type="text" id="item_code" required class="border p-2 rounded w-full text-sm">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-600 mb-1">Item Name</label>
+                            <input type="text" id="item_name" required class="border p-2 rounded w-full text-sm">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-600 mb-1">Category</label>
+                            <input type="text" id="item_category" class="border p-2 rounded w-full text-sm" placeholder="e.g. Jewelry">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-600 mb-1">Stock Qty</label>
+                            <input type="number" id="item_stock" required class="border p-2 rounded w-full text-sm" value="0">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-600 mb-1">Min Stock Alert</label>
+                            <input type="number" id="item_min" class="border p-2 rounded w-full text-sm" value="5">
+                        </div>
+                        <div class="md:col-span-5 flex justify-end">
+                            <button type="submit" class="bg-yellow-500 text-gray-900 font-bold px-6 py-2 rounded hover:bg-yellow-600 transition text-sm">Save to Excel</button>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- Items Table Display -->
+                <div class="bg-white p-6 rounded-lg shadow">
+                    <h2 class="text-lg font-bold mb-4 text-gray-700">Current Stock Items (Imported from items.xlsx)</h2>
+                    <div class="overflow-x-auto">
+                        <table class="w-full border-collapse">
+                            <thead>
+                                <tr class="bg-gray-200 text-left text-sm">
+                                    <th class="p-3">Item Code</th>
+                                    <th class="p-3">Name</th>
+                                    <th class="p-3">Category</th>
+                                    <th class="p-3">Stock</th>
+                                    <th class="p-3">Min Stock</th>
+                                </tr>
+                            </thead>
+                            <tbody id="itemsTableBody" class="text-sm">
+                                <!-- Loaded dynamically -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <script>
+        window.onload = function() {
+            loadItems();
+        };
+
+        function loadItems() {
+            fetch('/api/get_items')
+            .then(res => res.json())
+            .then(data => {
+                const tbody = document.getElementById('itemsTableBody');
+                tbody.innerHTML = '';
+
+                if (data.length === 0) {
+                    tbody.innerHTML = `<tr><td colspan="5" class="text-center p-4 text-gray-500">No items found in Excel file.</td></tr>`;
+                    return;
+                }
+
+                data.forEach(item => {
+                    const tr = document.createElement('tr');
+                    tr.className = "border-b hover:bg-gray-50";
+                    tr.innerHTML = `
+                        <td class="p-3 font-semibold">${item.Code || ''}</td>
+                        <td class="p-3">${item.Name || ''}</td>
+                        <td class="p-3">${item.Category || ''}</td>
+                        <td class="p-3 text-blue-600 font-bold">${item.Stock || 0}</td>
+                        <td class="p-3 text-red-500">${item.MinStock || 0}</td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+            })
+            .catch(err => console.error("Error loading items:", err));
+        }
+
+        function saveItem(event) {
+            event.preventDefault();
+
+            const itemData = {
+                code: document.getElementById('item_code').value,
+                name: document.getElementById('item_name').value,
+                category: document.getElementById('item_category').value,
+                stock: parseInt(document.getElementById('item_stock').value),
+                min_stock: parseInt(document.getElementById('item_min').value)
+            };
+
+            fetch('/api/save_item', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(itemData)
+            })
+            .then(res => res.json())
+            .then(result => {
+                if (result.status === 'success') {
+                    alert("Item saved to items.xlsx successfully!");
+                    document.getElementById('itemForm').reset();
+                    loadItems();
+                } else {
+                    alert("Error: " + result.message);
+                }
+            })
+            .catch(err => console.error("Error saving item:", err));
+        }
+    </script>
+</body>
+</html>
