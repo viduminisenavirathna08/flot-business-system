@@ -1,4 +1,5 @@
 import os
+import re
 import hmac
 import threading
 import calendar
@@ -23,6 +24,8 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 ITEMS_FILE = os.path.join(BASE_DIR, 'items.xlsx')   # project.py thiyena folder eke items.xlsx
 ITEM_COST_FILE = os.path.join(BASE_DIR, 'itemcost.xlsx')   # item cost / packing cost thiyena excel eka
 cost_lock = threading.Lock()
+ORDERS_LOG_FILE = os.path.join(BASE_DIR, 'orders_log.xlsx')   # okkoma orders save wena excel eka
+orders_log_lock = threading.Lock()
 excel_lock = threading.Lock()   # items.xlsx ekata ekama welawata godak write wenna epa
 
 ADMIN_USERNAME = os.getenv('ADMIN_USERNAME', 'admin')
@@ -75,9 +78,20 @@ def get_db_connection():
                 "item_code VARCHAR(50) DEFAULT '', product_name VARCHAR(150) DEFAULT '', "
                 "quantity INT DEFAULT 1, price DECIMAL(10,2) DEFAULT 0, INDEX idx_order (order_id))")
             try:
-                cursor.execute("ALTER TABLE orders MODIFY tracking_number VARCHAR(20) NULL DEFAULT NULL")
+                cursor.execute("ALTER TABLE orders MODIFY tracking_number VARCHAR(40) NULL DEFAULT NULL")
             except Exception:
                 pass   # tracking_number column eka nathnam awulak naha
+            cursor.execute(
+                "CREATE TABLE IF NOT EXISTS barcode_pool ("
+                "barcode VARCHAR(40) PRIMARY KEY, type VARCHAR(20) NOT NULL, "
+                "order_id INT NULL, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP, "
+                "INDEX idx_pool (type, order_id))")
+            # Parcel status (Shipped / Delivered / Returned) saha e wenas wuna welawa
+            for column, ddl in (('delivery_status', "VARCHAR(20) NOT NULL DEFAULT 'Shipped'"),
+                                ('status_updated_at', "DATETIME NULL")):
+                cursor.execute("SHOW COLUMNS FROM orders LIKE %s", (column,))
+                if not cursor.fetchone():
+                    cursor.execute("ALTER TABLE orders ADD COLUMN " + column + " " + ddl)
         connection.commit()
         _order_items_ready = True
     return connection
@@ -198,6 +212,54 @@ def customers_page():
 # ------------------------------------------------------------------
 # Orders API
 # ------------------------------------------------------------------
+STATUS_FILL_COLORS = {'Confirmed': 'E2F0D9', 'Cancelled': 'F8D7DA', 'Postponed': 'DDEBF7'}
+DEFAULT_FILL_COLOR = 'FFF2CC'   # New Lead / Callback / No Answer
+
+
+def export_orders_excel():
+    """DB eke okkoma orders ekama excel file ekakata (orders_log.xlsx) liyanawa. Light colors status walata."""
+    try:
+        from openpyxl.styles import PatternFill, Font
+        connection = get_db_connection()
+        with connection.cursor() as cursor:
+            cursor.execute("SELECT * FROM orders ORDER BY order_date ASC, id ASC")
+            orders = cursor.fetchall()
+            lines_map = load_order_lines(cursor, orders)
+        connection.close()
+
+        wb = openpyxl.Workbook()
+        ws = wb.active
+        ws.title = 'Orders'
+        ws.append(['Order ID', 'Date', 'Customer', 'Phone', 'Address', 'Item Codes', 'Items',
+                   'Quantity', 'Amount', 'Delivery', 'Status', 'Postpone Date', 'Tracking No', 'Parcel Status'])
+        for cell in ws[1]:
+            cell.font = Font(bold=True)
+        for o in orders:
+            lines = lines_map[o['id']]
+            ws.append([
+                o['id'], o['order_date'].isoformat() if o.get('order_date') else '',
+                o['customer_name'], o['phone_number'], o['address'],
+                ', '.join(l['code'] for l in lines if l['code']),
+                ' + '.join(('%s x%s' % (l['name'] or l['code'], l['qty'])) for l in lines),
+                sum(l['qty'] for l in lines), float(o['amount'] or 0),
+                o['delivery_method'], o['status'],
+                o['postpone_date'].isoformat() if o.get('postpone_date') else '',
+                o.get('tracking_number') or '', o.get('delivery_status') or 'Shipped'])
+            fill = PatternFill('solid', start_color=STATUS_FILL_COLORS.get(o['status'], DEFAULT_FILL_COLOR))
+            for cell in ws[ws.max_row]:
+                cell.fill = fill
+        for col, width in zip('ABCDEFGHIJKLMN', (9, 12, 22, 14, 36, 18, 40, 9, 12, 14, 12, 14, 18, 13)):
+            ws.column_dimensions[col].width = width
+        ws.freeze_panes = 'A2'
+
+        with orders_log_lock:
+            wb.save(ORDERS_LOG_FILE)
+        return True
+    except Exception as e:
+        print('orders_log.xlsx update failed (Excel eke open wela nam close karanna):', e)
+        return False
+
+
 def clean_lines(raw_items):
     """Frontend eke items list eka clean karanawa: [{'code','name','qty','price'}]"""
     lines = []
@@ -311,6 +373,8 @@ def get_orders():
             o['order_date'] = o['order_date'].isoformat() if o.get('order_date') else ''
             o['postpone_date'] = o['postpone_date'].isoformat() if o.get('postpone_date') else ''
             o['created_at'] = str(o['created_at']) if o.get('created_at') else ''
+            o['status_updated_at'] = str(o['status_updated_at'])[:16] if o.get('status_updated_at') else ''
+            o['delivery_status'] = o.get('delivery_status') or 'Shipped'
         return jsonify(orders)
     except Exception as e:
         return jsonify({'status': 'error', 'message': str(e)}), 500
@@ -328,6 +392,8 @@ def save_order():
             saved = insert_order(cursor, data)
             connection.commit()
         connection.close()
+        if saved:
+            export_orders_excel()
         return jsonify({'status': 'success' if saved else 'duplicate'})
     except Exception as e:
         return jsonify({'status': 'error', 'message': str(e)})
@@ -340,6 +406,7 @@ def bulk_save_orders():
     payload = request.get_json() or {}
     orders = payload.get('orders', [])
     added = duplicates = skipped = 0
+    duplicate_list = []
     try:
         connection = get_db_connection()
         with connection.cursor() as cursor:
@@ -351,10 +418,18 @@ def bulk_save_orders():
                     added += 1
                 else:
                     duplicates += 1
+                    agg = order_aggregate(lines_from_payload(d))
+                    duplicate_list.append({
+                        'name': d.get('name'), 'phone': d.get('phone'),
+                        'address': d.get('address') or '',
+                        'item_code': agg['item_code'], 'product_name': agg['product_name'],
+                        'amount': agg['amount'], 'order_date': d.get('order_date')})
             connection.commit()
         connection.close()
-        return jsonify({'status': 'success', 'added': added,
-                        'duplicates': duplicates, 'skipped': skipped})
+        if added:
+            export_orders_excel()
+        return jsonify({'status': 'success', 'added': added, 'duplicates': duplicates,
+                        'skipped': skipped, 'duplicate_list': duplicate_list})
     except Exception as e:
         return jsonify({'status': 'error', 'message': str(e)})
 
@@ -392,6 +467,7 @@ def update_order():
                  agg['item_code'], agg['product_name'], agg['quantity'], agg['amount'],
                  d.get('delivery') or 'Standard', order_id))
             write_order_items(cursor, order_id, lines)
+            sync_order_barcode(cursor, order_id)
             connection.commit()
         connection.close()
 
@@ -399,6 +475,313 @@ def update_order():
         if order['status'] == 'Confirmed':
             adjust_order_stock(old_lines, +1)
             adjust_order_stock(lines, -1)
+        export_orders_excel()
+        return jsonify({'status': 'success'})
+    except Exception as e:
+        return jsonify({'status': 'error', 'message': str(e)})
+
+
+PARCEL_STATUSES = ('Shipped', 'Delivered', 'Returned')
+
+
+@app.route('/api/parcels/scan', methods=['POST'])
+@login_required
+def scan_parcels():
+    """Barcode (tracking number) list ekak Delivered / Returned kirima. Barcode reader eken ekin eka pass karanna puluwan."""
+    d = request.get_json() or {}
+    status = d.get('status')
+    if status not in PARCEL_STATUSES:
+        return jsonify({'status': 'error', 'message': 'Invalid parcel status'})
+    codes = []
+    for c in d.get('barcodes', []):
+        c = str(c or '').strip().upper()
+        if c and c not in codes:
+            codes.append(c)
+    if not codes:
+        return jsonify({'status': 'error', 'message': 'No barcodes'})
+
+    try:
+        connection = get_db_connection()
+        updated, already, found_codes = [], [], set()
+        with connection.cursor() as cursor:
+            marks = ', '.join(['%s'] * len(codes))
+            cursor.execute(
+                "SELECT id, customer_name, phone_number, tracking_number, status, delivery_status "
+                "FROM orders WHERE UPPER(TRIM(tracking_number)) IN (" + marks + ")", codes)
+            rows = cursor.fetchall()
+            for r in rows:
+                code = str(r['tracking_number']).strip().upper()
+                found_codes.add(code)
+                info = {'barcode': code, 'customer': r['customer_name'], 'phone': r['phone_number'],
+                        'previous': r['delivery_status'] or 'Shipped'}
+                if (r['delivery_status'] or 'Shipped') == status:
+                    already.append(info)
+                else:
+                    cursor.execute("UPDATE orders SET delivery_status = %s, status_updated_at = NOW() "
+                                   "WHERE id = %s", (status, r['id']))
+                    updated.append(info)
+            connection.commit()
+        connection.close()
+        if updated:
+            export_orders_excel()
+        return jsonify({'status': 'success', 'updated': updated, 'already': already,
+                        'not_found': [c for c in codes if c not in found_codes]})
+    except Exception as e:
+        return jsonify({'status': 'error', 'message': str(e)})
+
+
+def is_courier_method(method):
+    t = str(method or '').lower()
+    return 'courier' in t or 'domex' in t or 'express' in t
+
+
+def pool_type_for(method):
+    return 'Courier' if is_courier_method(method) else 'Post Office'
+
+
+def assign_pool_barcode(cursor, order_id, kind):
+    """Pool eken ilaga available barcode eka order ekata denawa. Barcode eka return karanawa (nathnam None)."""
+    cursor.execute("SELECT barcode FROM barcode_pool WHERE type = %s AND order_id IS NULL "
+                   "ORDER BY barcode ASC LIMIT 1", (kind,))
+    row = cursor.fetchone()
+    if not row:
+        return None
+    cursor.execute("UPDATE barcode_pool SET order_id = %s WHERE barcode = %s AND order_id IS NULL",
+                   (order_id, row['barcode']))
+    if cursor.rowcount != 1:
+        return None
+    cursor.execute("UPDATE orders SET tracking_number = %s WHERE id = %s", (row['barcode'], order_id))
+    return row['barcode']
+
+
+def release_pool_barcode(cursor, order_id):
+    """Order ekata dunna pool barcode eka ayeth pool ekata (available) damanawa."""
+    cursor.execute("SELECT barcode FROM barcode_pool WHERE order_id = %s", (order_id,))
+    for r in cursor.fetchall():
+        cursor.execute("UPDATE barcode_pool SET order_id = NULL WHERE barcode = %s", (r['barcode'],))
+        cursor.execute("UPDATE orders SET tracking_number = NULL WHERE id = %s AND tracking_number = %s",
+                       (order_id, r['barcode']))
+
+
+def sync_order_barcode(cursor, order_id):
+    """Confirmed order ekakata delivery type ekata adala pool barcode ekak thiyenna hadanawa.
+    Confirmed nathnam / delivery type wenas unoth pool barcode eka ayeth pool ekata yanawa."""
+    cursor.execute("SELECT status, delivery_method, tracking_number FROM orders WHERE id = %s", (order_id,))
+    o = cursor.fetchone()
+    if not o:
+        return
+    cursor.execute("SELECT barcode, type FROM barcode_pool WHERE order_id = %s", (order_id,))
+    held = cursor.fetchone()
+    kind = pool_type_for(o['delivery_method'])
+    if o['status'] != 'Confirmed':
+        if held:
+            release_pool_barcode(cursor, order_id)
+        return
+    if held and held['type'] != kind:
+        release_pool_barcode(cursor, order_id)
+        held = None
+        o['tracking_number'] = None
+    if not held and not str(o['tracking_number'] or '').strip():
+        assign_pool_barcode(cursor, order_id, kind)
+
+
+def expand_barcode_token(token):
+    """'FL000001-FL000100' nathnam 'FL000001-100' wage range ekak barcodes list ekak karanawa."""
+    token = token.strip().upper()
+    if '-' not in token:
+        return [token]
+    left, right = token.split('-', 1)
+    ml = re.match(r'^([A-Z]*)(\d+)([A-Z]*)$', left)
+    mr = re.match(r'^([A-Z]*)(\d+)([A-Z]*)$', right)
+    if not ml or not mr:
+        return [token]
+    prefix, start, suffix = ml.group(1), ml.group(2), ml.group(3)
+    if (mr.group(1) and mr.group(1) != prefix) or (mr.group(3) and mr.group(3) != suffix):
+        return [token]
+    a, b = int(start), int(mr.group(2))
+    if b < a or b - a >= 5000:
+        return [token]
+    width = len(start)
+    return [prefix + str(n).zfill(width) + suffix for n in range(a, b + 1)]
+
+
+@app.route('/api/barcode_pool/add', methods=['POST'])
+@login_required
+def barcode_pool_add():
+    """Post Office / Courier barcodes pool ekata add karanawa (range ekath: FL000001-FL000100).
+    Line eke 'BARCODE 07xxxxxxxx' nam e phone eke parcel ekatama denawa. Ithuru barcodes pool ekata."""
+    d = request.get_json() or {}
+    kind = d.get('type')
+    if kind not in ('Post Office', 'Courier'):
+        return jsonify({'status': 'error', 'message': 'Choose Post Office or Courier'})
+
+    plain, by_phone = [], []
+    for line in str(d.get('text', '')).replace(',', ' ').replace(';', ' ').splitlines():
+        tokens = line.split()
+        if not tokens:
+            continue
+        digits = tokens[1].replace('-', '') if len(tokens) > 1 else ''
+        if len(tokens) == 2 and digits.isdigit() and 9 <= len(digits) <= 12:
+            by_phone.append((tokens[0].strip().upper(), digits if len(digits) != 9 else '0' + digits))
+        else:
+            for t in tokens:
+                plain.extend(expand_barcode_token(t))
+    if not plain and not by_phone:
+        return jsonify({'status': 'error', 'message': 'No barcodes'})
+
+    try:
+        connection = get_db_connection()
+        added = duplicates = assigned = 0
+        notes = []
+        with connection.cursor() as cursor:
+            cursor.execute("SELECT UPPER(TRIM(tracking_number)) AS t FROM orders "
+                           "WHERE tracking_number IS NOT NULL AND TRIM(tracking_number) <> ''")
+            used = {r['t'] for r in cursor.fetchall()}
+            cursor.execute("SELECT barcode FROM barcode_pool")
+            in_pool = {r['barcode'] for r in cursor.fetchall()}
+
+            for code in plain:
+                if len(code) > 40:
+                    notes.append(code + ' - too long')
+                elif code in used or code in in_pool:
+                    duplicates += 1
+                else:
+                    cursor.execute("INSERT INTO barcode_pool (barcode, type) VALUES (%s, %s)", (code, kind))
+                    in_pool.add(code)
+                    added += 1
+
+            cursor.execute("SELECT id, phone_number, delivery_method FROM orders "
+                           "WHERE status = 'Confirmed' AND (tracking_number IS NULL OR TRIM(tracking_number) = '') "
+                           "ORDER BY order_date ASC, id ASC")
+            waiting = [r for r in cursor.fetchall() if pool_type_for(r['delivery_method']) == kind]
+
+            for code, phone in by_phone:
+                if code in used or code in in_pool:
+                    duplicates += 1
+                    continue
+                target = next((r for r in waiting
+                               if str(r['phone_number']).replace('-', '').lstrip('0') == phone.lstrip('0')), None)
+                if not target:
+                    notes.append(code + ' - no waiting parcel for ' + phone)
+                    continue
+                waiting.remove(target)
+                cursor.execute("INSERT INTO barcode_pool (barcode, type, order_id) VALUES (%s, %s, %s)",
+                               (code, kind, target['id']))
+                cursor.execute("UPDATE orders SET tracking_number = %s WHERE id = %s", (code, target['id']))
+                in_pool.add(code)
+                added += 1
+                assigned += 1
+
+            # Barcode nathi Confirmed parcels walata pool eken auto assign
+            for r in waiting:
+                if assign_pool_barcode(cursor, r['id'], kind):
+                    assigned += 1
+            connection.commit()
+        connection.close()
+        if assigned:
+            export_orders_excel()
+        return jsonify({'status': 'success', 'added': added, 'duplicates': duplicates,
+                        'assigned': assigned, 'notes': notes})
+    except Exception as e:
+        return jsonify({'status': 'error', 'message': str(e)})
+
+
+@app.route('/api/barcode_pool/summary', methods=['GET'])
+@login_required
+def barcode_pool_summary():
+    try:
+        connection = get_db_connection()
+        with connection.cursor() as cursor:
+            cursor.execute("SELECT type, COUNT(*) AS n FROM barcode_pool WHERE order_id IS NULL GROUP BY type")
+            available = {r['type']: int(r['n']) for r in cursor.fetchall()}
+            cursor.execute("SELECT delivery_method FROM orders WHERE status = 'Confirmed' "
+                           "AND (tracking_number IS NULL OR TRIM(tracking_number) = '')")
+            needed = {'Post Office': 0, 'Courier': 0}
+            for r in cursor.fetchall():
+                needed[pool_type_for(r['delivery_method'])] += 1
+            cursor.execute("SELECT COUNT(*) AS n FROM orders WHERE status = 'Postponed'")
+            hold = int(cursor.fetchone()['n'])
+        connection.close()
+        return jsonify({'post_office': {'available': available.get('Post Office', 0), 'needed': needed['Post Office']},
+                        'courier': {'available': available.get('Courier', 0), 'needed': needed['Courier']},
+                        'hold': hold})
+    except Exception as e:
+        return jsonify({'status': 'error', 'message': str(e)}), 500
+
+
+@app.route('/api/parcels/status', methods=['POST'])
+@login_required
+def set_parcel_status():
+    d = request.get_json() or {}
+    order_id = d.get('id')
+    status = d.get('delivery_status')
+    if not order_id or status not in PARCEL_STATUSES:
+        return jsonify({'status': 'error', 'message': 'Order id and valid status are required'})
+    try:
+        connection = get_db_connection()
+        with connection.cursor() as cursor:
+            cursor.execute("UPDATE orders SET delivery_status = %s, status_updated_at = NOW() "
+                           "WHERE id = %s", (status, order_id))
+            connection.commit()
+        connection.close()
+        export_orders_excel()
+        return jsonify({'status': 'success'})
+    except Exception as e:
+        return jsonify({'status': 'error', 'message': str(e)})
+
+
+@app.route('/api/update_delivery', methods=['POST'])
+@login_required
+def update_delivery():
+    d = request.get_json() or {}
+    order_id = d.get('id')
+    method = str(d.get('delivery', '') or '').strip()
+    if not order_id or not method or len(method) > 50:
+        return jsonify({'status': 'error', 'message': 'Order id and delivery method are required'})
+    try:
+        connection = get_db_connection()
+        with connection.cursor() as cursor:
+            cursor.execute("UPDATE orders SET delivery_method = %s WHERE id = %s", (method, order_id))
+            sync_order_barcode(cursor, order_id)
+            connection.commit()
+        connection.close()
+        export_orders_excel()
+        return jsonify({'status': 'success'})
+    except Exception as e:
+        return jsonify({'status': 'error', 'message': str(e)})
+
+
+@app.route('/api/save_tracking', methods=['POST'])
+@login_required
+def save_tracking():
+    d = request.get_json() or {}
+    order_id = d.get('id')
+    tracking = str(d.get('tracking_number', '') or '').strip()
+    if not order_id:
+        return jsonify({'status': 'error', 'message': 'Order id is required'})
+    if len(tracking) > 40:
+        return jsonify({'status': 'error', 'message': 'Tracking number is too long (max 40 characters)'})
+    try:
+        connection = get_db_connection()
+        with connection.cursor() as cursor:
+            if tracking:
+                cursor.execute("SELECT id, customer_name FROM orders WHERE UPPER(TRIM(tracking_number)) = %s "
+                               "AND id <> %s LIMIT 1", (tracking.upper(), order_id))
+                other = cursor.fetchone()
+                if other:
+                    connection.close()
+                    return jsonify({'status': 'error',
+                                    'message': 'This barcode is already used for ' + str(other['customer_name'])})
+            cursor.execute("UPDATE orders SET tracking_number = %s WHERE id = %s",
+                           (tracking or None, order_id))
+            # Pool barcode ekak wenas karoth pala eka ayeth pool ekata, aluth eka pool eke nam e order ekata
+            cursor.execute("UPDATE barcode_pool SET order_id = NULL WHERE order_id = %s AND barcode <> %s",
+                           (order_id, tracking.upper()))
+            if tracking:
+                cursor.execute("UPDATE barcode_pool SET order_id = %s WHERE barcode = %s AND order_id IS NULL",
+                               (order_id, tracking.upper()))
+            connection.commit()
+        connection.close()
         return jsonify({'status': 'success'})
     except Exception as e:
         return jsonify({'status': 'error', 'message': str(e)})
@@ -443,6 +826,7 @@ def update_order_status():
             old_status = order['status']
             cursor.execute("UPDATE orders SET status = %s, postpone_date = %s WHERE id = %s",
                            (new_status, postpone_date, order['id']))
+            sync_order_barcode(cursor, order['id'])
             connection.commit()
 
             order_lines = load_order_lines(cursor, [order])[order['id']]
@@ -453,6 +837,7 @@ def update_order_status():
             elif old_status == 'Confirmed' and new_status != 'Confirmed':
                 adjust_order_stock(order_lines, +1)
         connection.close()
+        export_orders_excel()
         return jsonify({'status': 'success'})
     except Exception as e:
         return jsonify({'status': 'error', 'message': str(e)})
@@ -730,7 +1115,7 @@ def compute_parcels(cursor, start, end):
 
     cursor.execute(
         "SELECT id, customer_name, phone_number, product_name, item_code, quantity, "
-        "amount, delivery_method, order_date FROM orders "
+        "amount, delivery_method, order_date, delivery_status FROM orders "
         "WHERE status = 'Confirmed' AND order_date BETWEEN %s AND %s "
         "ORDER BY order_date ASC, id ASC", (start, end))
     orders = cursor.fetchall()
@@ -761,7 +1146,9 @@ def compute_parcels(cursor, start, end):
         day = o['order_date']
         order_lines = lines_map[o['id']]
         qty = sum(l['qty'] for l in order_lines) or 1
-        sale = float(o['amount'] or 0)
+        returned = (o.get('delivery_status') == 'Returned')
+        # Return una parcel ekata income naha (sale = 0), item eka ayeth enawa nisa item cost naha. Packing, delivery, ad saha extra cost loss wenawa.
+        sale = 0.0 if returned else float(o['amount'] or 0)
         ov = overrides.get(o['id']) or {}
 
         # Order eke item line ekin ekata cost (Code + Quantity), packing = line walin wadi eka
@@ -770,7 +1157,8 @@ def compute_parcels(cursor, start, end):
         line_categories = []
         for l in order_lines:
             info, scaled = lookup_item_cost(item_costs, l['code'], l['qty'])
-            product_default += info.get('cost', 0.0) * (l['qty'] if scaled else 1)
+            if not returned:
+                product_default += info.get('cost', 0.0) * (l['qty'] if scaled else 1)
             if info.get('packing') is not None:
                 packings.append(info['packing'])
             cat = categories.get(str(l['code']).strip().lower()) or info.get('category', '')
@@ -796,7 +1184,8 @@ def compute_parcels(cursor, start, end):
             'lines': order_lines,
             'category': ', '.join(line_categories),
             'delivery_method': o['delivery_method'] or '',
-            'quantity': qty, 'sale': r2(sale),
+            'quantity': qty, 'sale': r2(sale), 'returned': returned,
+            'delivery_status': o.get('delivery_status') or 'Shipped',
             'product_cost': r2(product), 'packing_cost': r2(packing),
             'delivery_cost': r2(delivery), 'extra_cost': r2(extra),
             'ad_share': r2(ad_share),
@@ -818,8 +1207,11 @@ def summarize(parcels, ad_cost):
     delivery = sum(p['delivery_cost'] for p in parcels)
     extra = sum(p['extra_cost'] for p in parcels)
     gross = sales - product - packing - delivery - extra - ad_cost
+    returned = [p for p in parcels if p.get('returned')]
     return {
         'parcels': len(parcels), 'sales': r2(sales),
+        'returned': len(returned),
+        'returned_loss': r2(sum(p['product_cost'] + p['packing_cost'] + p['delivery_cost'] + p['extra_cost'] for p in returned)),
         'product_cost': r2(product), 'packing_cost': r2(packing),
         'delivery_cost': r2(delivery), 'extra_cost': r2(extra),
         'parcel_costs': r2(product + packing + delivery + extra),
